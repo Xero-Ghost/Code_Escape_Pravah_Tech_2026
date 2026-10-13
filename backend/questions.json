@@ -1,0 +1,949 @@
+[
+  {
+    "kind": "case",
+    "title": "The invisible stylesheet",
+    "prompt": "HTML loads, but the network panel reports 404 for /styles.css. What is the most likely cause?",
+    "choices": [
+      "Incorrect stylesheet URL or missing deployed file",
+      "A selector with lower CSS specificity",
+      "A later rule overriding the text color",
+      "An unsupported CSS property"
+    ],
+    "answer": 0,
+    "explanation": "A 404 response means the requested resource was not found at that URL; inspect the stylesheet path and deployed file.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404"
+  },
+  {
+    "kind": "case",
+    "title": "A button that does nothing",
+    "prompt": "A script in the document head calls getElementById before the button markup is parsed. It receives null. What caused this?",
+    "choices": [
+      "The button has a CSS display rule",
+      "The click handler returns false",
+      "The button uses a relative font size",
+      "The target element has not been parsed yet"
+    ],
+    "answer": 3,
+    "explanation": "The lookup runs before the element has been parsed. Defer the script or wait for the DOM to be ready.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById"
+  },
+  {
+    "kind": "case",
+    "title": "The endless counter",
+    "prompt": "Pseudocode sets i = 1 and repeats WHILE i <= 5, printing i without changing it. Why does it never finish?",
+    "choices": [
+      "PRINT converts the counter into text",
+      "The loop compares two integers",
+      "The counter is never updated",
+      "The counter starts at one instead of zero"
+    ],
+    "answer": 2,
+    "explanation": "The loop condition remains true because i never changes. Increment the counter inside the loop.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "case",
+    "title": "Login query fails",
+    "prompt": "A SQL query uses WHERE username = userInput by directly concatenating raw user input. What should replace this unsafe construction?",
+    "choices": [
+      "Checking input only in browser JavaScript",
+      "A parameterized query with bound input values",
+      "Escaping the resulting HTML only",
+      "Changing the query from POST to GET"
+    ],
+    "answer": 1,
+    "explanation": "Binding values through query parameters separates user input from SQL syntax.",
+    "source": "https://docs.python.org/3/library/sqlite3.html"
+  },
+  {
+    "kind": "case",
+    "title": "Missing JSON data",
+    "prompt": "A server sends valid JSON, but JavaScript uses response.text() and then accesses result.name. Why is name undefined?",
+    "choices": [
+      "The response body was read as a string",
+      "The server must return XML for property access",
+      "Every JSON object must contain an id field",
+      "The request method must always be POST"
+    ],
+    "answer": 0,
+    "explanation": "response.text() returns a string. Parse JSON, for example using response.json(), before reading object properties.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch"
+  },
+  {
+    "kind": "case",
+    "title": "One result too many",
+    "prompt": "An array has indexes 0 through 4. A loop reads indexes 0 through 5 inclusive. What caused the invalid access?",
+    "choices": [
+      "The first item is at index one",
+      "The array must contain six comments",
+      "The array stores numbers rather than strings",
+      "The loop includes an invalid final index"
+    ],
+    "answer": 3,
+    "explanation": "An array of five items has valid indexes 0–4. Reading index 5 exceeds the array bounds.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "case",
+    "title": "Local works, remote fails",
+    "prompt": "A deployed frontend calls http://localhost:5000/api. Why can another student not reach the backend?",
+    "choices": [
+      "Every frontend must use the database port directly",
+      "The HTTP method changes automatically after deployment",
+      "localhost refers to the visiting student’s own machine",
+      "React cannot send HTTP requests after deployment"
+    ],
+    "answer": 2,
+    "explanation": "localhost refers to the machine making the request, not the developer’s remote server.",
+    "source": "https://developer.mozilla.org/en-US/docs/Glossary/Localhost"
+  },
+  {
+    "kind": "case",
+    "title": "A locked-out user",
+    "prompt": "An access token is configured to expire at 16:00 UTC. At 16:01 UTC the server rejects it even though the signature is valid. Which explanation matches these facts?",
+    "choices": [
+      "The database has converted the email into a number",
+      "The configured access window has expired",
+      "The password must be typed in uppercase after noon",
+      "The login form needs a different font"
+    ],
+    "answer": 1,
+    "explanation": "The stated expiration time has passed. Valid credentials can still be rejected outside their configured access window.",
+    "source": "https://www.rfc-editor.org/rfc/rfc7519#section-4.1.4"
+  },
+  {
+    "kind": "case",
+    "title": "Unexpected total",
+    "prompt": "A program reads the strings \"2\" and \"3\" and joins them into \"23\". What is needed to calculate 5?",
+    "choices": [
+      "Convert both inputs to numeric values before addition",
+      "Reverse the two input strings",
+      "Append another plus sign to the result",
+      "Convert the final text to uppercase"
+    ],
+    "answer": 0,
+    "explanation": "Numeric-looking strings must be converted to numbers before numeric addition; otherwise joining them yields text.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "case",
+    "title": "Stale screen",
+    "prompt": "The server has a new score, but the page fetched scores only on initial load. What is missing?",
+    "choices": [
+      "The SQL table must be deleted and recreated",
+      "The score must be rendered in an image element",
+      "The page must disable all HTTP caching forever",
+      "The page needs a refresh or live update mechanism"
+    ],
+    "answer": 3,
+    "explanation": "A one-time fetch is a snapshot. Fetch again, poll, or use a push update when the underlying score changes.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch"
+  },
+  {
+    "kind": "case",
+    "title": "Repeated registrations",
+    "prompt": "Two requests create a registration for the same email simultaneously. Which database control reliably prevents duplicates?",
+    "choices": [
+      "Checking for duplicates only before INSERT in app code",
+      "Sorting the spreadsheet by email",
+      "A UNIQUE constraint on the email column",
+      "Disabling the submit button in only one browser"
+    ],
+    "answer": 2,
+    "explanation": "A database unique constraint rejects a conflicting email even when two insert requests race.",
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/create-table.html"
+  },
+  {
+    "kind": "case",
+    "title": "Unreachable website",
+    "prompt": "A domain lookup returns NXDOMAIN while other sites work. What should you investigate first?",
+    "choices": [
+      "The HTML heading hierarchy",
+      "DNS/domain spelling and configuration",
+      "The CSS box model",
+      "The SQL query projection"
+    ],
+    "answer": 1,
+    "explanation": "NXDOMAIN says the queried domain name does not exist in DNS. Check the domain spelling and DNS setup first.",
+    "source": "https://www.rfc-editor.org/rfc/rfc2308"
+  },
+  {
+    "kind": "case",
+    "title": "Form reload",
+    "prompt": "A JavaScript submit handler runs, but the browser performs a normal form submission too. What is missing?",
+    "choices": [
+      "event.preventDefault() in the submit handler",
+      "A return statement in an unrelated function",
+      "An additional CSS class on the form",
+      "A new database index"
+    ],
+    "answer": 0,
+    "explanation": "Calling preventDefault() in the submit event handler prevents the browser’s default form submission.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault"
+  },
+  {
+    "kind": "case",
+    "title": "Counting empty results",
+    "prompt": "A query returns no rows, but code immediately reads rows[0].name. What is the issue?",
+    "choices": [
+      "SQL guarantees one row for every SELECT",
+      "The name column is always a numeric type",
+      "The browser cannot render an empty table",
+      "The code accesses the first result without an empty-result check"
+    ],
+    "answer": 3,
+    "explanation": "The program must handle an empty result before dereferencing its first element.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "case",
+    "title": "A cross-origin request",
+    "prompt": "A browser blocks a frontend request to a different backend origin because the backend does not allow that origin. What should be configured?",
+    "choices": [
+      "The order of rows in the database",
+      "The page title and favicon",
+      "The backend CORS allowlist for the frontend origin",
+      "The frontend font-loading strategy"
+    ],
+    "answer": 2,
+    "explanation": "The backend must return CORS permission for the requesting frontend origin; CSS changes cannot grant it.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS"
+  },
+  {
+    "kind": "arrange",
+    "title": "Add two numbers",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "sum = a + b",
+      "PRINT sum",
+      "READ a, b"
+    ],
+    "answer": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Read both operands, calculate their sum, then print the result. For a=2 and b=3 the output is 5.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Area of a rectangle",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "area = width * height",
+      "PRINT area",
+      "READ width, height"
+    ],
+    "answer": [
+      2,
+      0,
+      1
+    ],
+    "explanation": "Read width and height, multiply them, then print the area. Width 4 and height 3 produce 12.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Convert Celsius to Fahrenheit",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "fahrenheit = scaled + 32",
+      "PRINT fahrenheit",
+      "READ celsius",
+      "scaled = celsius * 9 / 5"
+    ],
+    "answer": [
+      2,
+      3,
+      0,
+      1
+    ],
+    "explanation": "The conversion is F = C × 9 / 5 + 32, using real-number division. 0°C produces 32°F.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Swap two values",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "a = b",
+      "b = temp",
+      "PRINT a, b",
+      "READ a, b",
+      "temp = a"
+    ],
+    "answer": [
+      3,
+      4,
+      0,
+      1,
+      2
+    ],
+    "explanation": "Save the original a in temp before overwriting a, then put temp into b. Inputs 2 and 7 become 7 and 2.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Sum from one to five",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "  total = total + i",
+      "END FOR",
+      "PRINT total",
+      "total = 0",
+      "FOR i FROM 1 TO 5"
+    ],
+    "answer": [
+      3,
+      4,
+      0,
+      1,
+      2
+    ],
+    "explanation": "Initialize total once, accumulate integers 1 through 5 inclusive, and print after the loop. The result is 15.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Count even numbers",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. The list numbers is already supplied; it is non-empty for the largest-value task.",
+    "choices": [
+      "  IF n MOD 2 = 0",
+      "    count = count + 1",
+      "  END IF",
+      "END FOR",
+      "PRINT count",
+      "count = 0",
+      "FOR n IN numbers"
+    ],
+    "answer": [
+      5,
+      6,
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "explanation": "Initialize count, test each value for remainder zero on division by 2, increment inside the IF, then print the count.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Find the largest value",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. The list numbers is already supplied; it is non-empty for the largest-value task.",
+    "choices": [
+      "  IF n > largest",
+      "    largest = n",
+      "  END IF",
+      "END FOR",
+      "PRINT largest",
+      "largest = numbers[0]",
+      "FOR n IN numbers"
+    ],
+    "answer": [
+      5,
+      6,
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "explanation": "For a non-empty list, initialize largest from its first element, compare each value, and update only for a larger value.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Compute a factorial",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. Input n is a non-negative integer.",
+    "choices": [
+      "FOR i FROM 1 TO n",
+      "  result = result * i",
+      "END FOR",
+      "PRINT result",
+      "READ n",
+      "result = 1"
+    ],
+    "answer": [
+      4,
+      5,
+      0,
+      1,
+      2,
+      3
+    ],
+    "explanation": "Read a non-negative integer n first, initialize result to 1, and multiply by 1 through n inclusive. 0! is 1.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Reverse a string",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "FOR i FROM LENGTH(text)-1 DOWN TO 0",
+      "  reversed = reversed + text[i]",
+      "END FOR",
+      "PRINT reversed",
+      "READ text",
+      "reversed = \"\""
+    ],
+    "answer": [
+      4,
+      5,
+      0,
+      1,
+      2,
+      3
+    ],
+    "explanation": "Read the string, initialize an empty result, append characters from the last index down to zero, and print the result.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Average three values",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "average = total / 3",
+      "PRINT average",
+      "READ a, b, c",
+      "total = a + b + c"
+    ],
+    "answer": [
+      2,
+      3,
+      0,
+      1
+    ],
+    "explanation": "Read the three values, calculate their total, divide by 3 using real-number division, and print the average.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Search a list",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. The list numbers is already supplied; it is non-empty for the largest-value task.",
+    "choices": [
+      "FOR value IN numbers",
+      "  IF value = target",
+      "    found = TRUE",
+      "  END IF",
+      "END FOR",
+      "PRINT found",
+      "READ target",
+      "found = FALSE"
+    ],
+    "answer": [
+      6,
+      7,
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "explanation": "Read target first, initialize found to FALSE, compare every provided list value, and set found to TRUE on a match.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Calculate a discount",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "finalPrice = price - discount",
+      "PRINT finalPrice",
+      "READ price",
+      "discount = price * 0.10"
+    ],
+    "answer": [
+      2,
+      3,
+      0,
+      1
+    ],
+    "explanation": "Read the price, calculate ten percent of that price, subtract the discount, and print the remainder. Price 100 yields 90.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Count down",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "  PRINT i",
+      "  i = i - 1",
+      "END WHILE",
+      "PRINT \"Go\"",
+      "i = 3",
+      "WHILE i > 0"
+    ],
+    "answer": [
+      4,
+      5,
+      0,
+      1,
+      2,
+      3
+    ],
+    "explanation": "Initialize i to 3. Print and decrement inside the loop, then print Go after the loop. Output: 3, 2, 1, Go.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "First three squares",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "  PRINT square",
+      "END FOR",
+      "FOR i FROM 1 TO 3",
+      "  square = i * i"
+    ],
+    "answer": [
+      2,
+      3,
+      0,
+      1
+    ],
+    "explanation": "For i = 1, 2, 3, compute the square before printing it inside the loop. Outputs are 1, 4, 9.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "arrange",
+    "title": "Minutes into seconds",
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "choices": [
+      "message = \"Seconds: \" + TO_STRING(seconds)",
+      "PRINT message",
+      "READ minutes",
+      "seconds = minutes * 60"
+    ],
+    "answer": [
+      2,
+      3,
+      0,
+      1
+    ],
+    "explanation": "Read minutes, multiply by 60, construct the message from the calculated seconds, and print. 2 minutes gives Seconds: 120.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "error",
+    "title": "Array boundary",
+    "prompt": "Pseudocode arrays use zero-based indexing. Which line first attempts an out-of-bounds array access?",
+    "choices": [
+      "values = [10, 20, 30]",
+      "index = 3",
+      "PRINT values[index]",
+      "STOP"
+    ],
+    "answer": 2,
+    "explanation": "The first invalid access occurs at PRINT values[index]: index is 3 but the list has only indexes 0, 1 and 2.",
+    "source": "https://docs.python.org/3/library/exceptions.html"
+  },
+  {
+    "kind": "error",
+    "title": "Division by zero",
+    "prompt": "Which line attempts an invalid arithmetic operation?",
+    "choices": [
+      "a = 8",
+      "b = 0",
+      "result = a / b",
+      "PRINT result"
+    ],
+    "answer": 2,
+    "explanation": "The expression a / b divides by zero because b is 0; the invalid operation is the division line.",
+    "source": "https://docs.python.org/3/library/exceptions.html"
+  },
+  {
+    "kind": "error",
+    "title": "Variable spelling",
+    "prompt": "Variables must be defined before use. Select the line with the undefined variable.",
+    "choices": [
+      "total = 5",
+      "count = 2",
+      "average = totla / count",
+      "PRINT average"
+    ],
+    "answer": 2,
+    "explanation": "totla is not the defined variable total. The misspelled name is used in the division expression.",
+    "source": "https://docs.python.org/3/library/exceptions.html"
+  },
+  {
+    "kind": "error",
+    "title": "Python colon",
+    "prompt": "Select the Python line with a syntax error.",
+    "choices": [
+      "x = 4",
+      "if x > 0",
+      "    print(x)",
+      "print(\"done\")"
+    ],
+    "answer": 1,
+    "explanation": "The Python if header must end with a colon.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "error",
+    "title": "Python assignment",
+    "prompt": "Select the Python line that incorrectly uses assignment in a condition.",
+    "choices": [
+      "x = 3",
+      "if x = 3:",
+      "    print(\"three\")",
+      "print(\"end\")"
+    ],
+    "answer": 1,
+    "explanation": "Python equality testing uses ==. A bare assignment with = is not valid in this if condition.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "error",
+    "title": "JavaScript constant",
+    "prompt": "Select the JavaScript statement that attempts to reassign a constant.",
+    "choices": [
+      "const score = 0;",
+      "let bonus = 2;",
+      "score = score + bonus;",
+      "console.log(score);"
+    ],
+    "answer": 2,
+    "explanation": "const creates a binding that cannot be reassigned. Assigning a new value to score throws a TypeError. It does not imply deep object immutability.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Invalid_const_assignment"
+  },
+  {
+    "kind": "error",
+    "title": "SQL selection",
+    "prompt": "Which SQL statement has the wrong clause order?",
+    "choices": [
+      "SELECT name FROM students;",
+      "SELECT * FROM students WHERE score > 5;",
+      "SELECT name WHERE score > 5 FROM students;",
+      "SELECT COUNT(*) FROM students;"
+    ],
+    "answer": 2,
+    "explanation": "SELECT ... FROM ... WHERE ... is the required clause order. In the third statement WHERE incorrectly precedes FROM.",
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/select.html"
+  },
+  {
+    "kind": "error",
+    "title": "Python loop boundary",
+    "prompt": "Goal: print 1, 2, 3. Which line has the incorrect boundary?",
+    "choices": [
+      "start = 1",
+      "for i in range(start, 3):",
+      "    print(i)",
+      "print(\"done\")"
+    ],
+    "answer": 1,
+    "explanation": "range(start, 3) excludes 3. With start=1, it produces 1 and 2; the stop argument should be 4.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "error",
+    "title": "Infinite loop",
+    "prompt": "Goal: count from 1 to 3 and stop. Which line updates the counter in the wrong direction?",
+    "choices": [
+      "i = 1",
+      "WHILE i <= 3",
+      "  i = i - 1",
+      "END WHILE"
+    ],
+    "answer": 2,
+    "explanation": "Decrementing a counter that starts at 1 cannot make i <= 3 false. Increment it to reach the terminating condition.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "error",
+    "title": "DOM spelling",
+    "prompt": "Which JavaScript call uses a nonexistent DOM method?",
+    "choices": [
+      "const title = document.getElementById(\"title\");",
+      "const buttons = document.querySelectorAll(\"button\");",
+      "const item = document.getElementByID(\"item\");",
+      "console.log(title);"
+    ],
+    "answer": 2,
+    "explanation": "JavaScript property names are case-sensitive. The method is getElementById, with lowercase d at the end.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById"
+  },
+  {
+    "kind": "error",
+    "title": "Function invocation",
+    "prompt": "Goal: invoke greet and print its result in Python. Which line fails to call the function?",
+    "choices": [
+      "def greet():",
+      "    return \"hello\"",
+      "result = greet",
+      "print(result)"
+    ],
+    "answer": 2,
+    "explanation": "result = greet assigns the function object. result = greet() calls it and stores its returned string.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "error",
+    "title": "List versus index",
+    "prompt": "Which Python statement attempts to access an out-of-range element?",
+    "choices": [
+      "items = [\"a\", \"b\"]",
+      "print(items[0])",
+      "print(items[2])",
+      "print(len(items))"
+    ],
+    "answer": 2,
+    "explanation": "A two-element Python list has indexes 0 and 1. items[2] raises IndexError.",
+    "source": "https://docs.python.org/3/library/exceptions.html"
+  },
+  {
+    "kind": "error",
+    "title": "Incorrect accumulation",
+    "prompt": "Goal: sum all values. Which line discards the previous total?",
+    "choices": [
+      "total = 0",
+      "FOR x IN [1, 2, 3]",
+      "  total = x",
+      "END FOR"
+    ],
+    "answer": 2,
+    "explanation": "total = x replaces the accumulator. Use total = total + x to retain the previous sum.",
+    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+  },
+  {
+    "kind": "error",
+    "title": "String plus integer",
+    "prompt": "Which Python line causes a TypeError?",
+    "choices": [
+      "age = 18",
+      "label = \"Age: \"",
+      "message = label + age",
+      "print(message)"
+    ],
+    "answer": 2,
+    "explanation": "Python does not concatenate str and int with +. Convert age with str(age) or format it into a string.",
+    "source": "https://docs.python.org/3/library/exceptions.html"
+  },
+  {
+    "kind": "error",
+    "title": "Missing quotes",
+    "prompt": "Which Python line uses an undefined name instead of a string literal?",
+    "choices": [
+      "name = \"Asha\"",
+      "greeting = Hello",
+      "message = greeting + name",
+      "print(message)"
+    ],
+    "answer": 1,
+    "explanation": "Hello without quotes is a name lookup. Since it is undefined, greeting = Hello raises NameError.",
+    "source": "https://docs.python.org/3/library/exceptions.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "HTML basics",
+    "prompt": "Which HTML element, with an href attribute, creates a hyperlink?",
+    "choices": [
+      "<a>",
+      "<p>",
+      "<div>",
+      "<span>"
+    ],
+    "answer": 0,
+    "explanation": "The a element creates a hyperlink when it has an href attribute.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a"
+  },
+  {
+    "kind": "quiz",
+    "title": "CSS selection",
+    "prompt": "Which CSS selector targets an element with id arena?",
+    "choices": [
+      ".arena",
+      "#arena",
+      "arena[]",
+      "*arena"
+    ],
+    "answer": 1,
+    "explanation": "A CSS ID selector uses # followed by the ID value.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/CSS/ID_selectors"
+  },
+  {
+    "kind": "quiz",
+    "title": "HTTP read",
+    "prompt": "Which HTTP method is normally used to retrieve a resource?",
+    "choices": [
+      "POST",
+      "DELETE",
+      "GET",
+      "PATCH"
+    ],
+    "answer": 2,
+    "explanation": "GET requests a representation of a resource.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET"
+  },
+  {
+    "kind": "quiz",
+    "title": "JSON values",
+    "prompt": "Which is valid JSON?",
+    "choices": [
+      "{name: Asha}",
+      "{\"name\": \"Asha\"}",
+      "{'name': 'Asha'}",
+      "{name = \"Asha\"}"
+    ],
+    "answer": 1,
+    "explanation": "JSON object property names and string values use double quotes.",
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON"
+  },
+  {
+    "kind": "quiz",
+    "title": "SQL filter",
+    "prompt": "Which SQL clause filters rows before grouping?",
+    "choices": [
+      "WHERE",
+      "ORDER BY",
+      "SELECT",
+      "LIMIT"
+    ],
+    "answer": 0,
+    "explanation": "WHERE filters rows before GROUP BY is evaluated; HAVING filters groups.",
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/select.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "Remainders",
+    "prompt": "What is the value of 17 MOD 5?",
+    "choices": [
+      "5",
+      "3",
+      "2",
+      "0"
+    ],
+    "answer": 2,
+    "explanation": "17 = 3 × 5 + 2, so the remainder is 2.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "Boolean logic",
+    "prompt": "What is TRUE AND FALSE?",
+    "choices": [
+      "TRUE",
+      "FALSE",
+      "NULL",
+      "Both"
+    ],
+    "answer": 1,
+    "explanation": "Logical AND is true only when both operands are true.",
+    "source": "https://docs.python.org/3/library/stdtypes.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "Queue order",
+    "prompt": "A basic queue follows which order?",
+    "choices": [
+      "Last in, first out",
+      "Random access only",
+      "First in, first out",
+      "Largest number first"
+    ],
+    "answer": 2,
+    "explanation": "A standard queue removes elements in first-in, first-out order.",
+    "source": "https://docs.python.org/3/tutorial/datastructures.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "Binary search",
+    "prompt": "What must be true of a standard binary search input array?",
+    "choices": [
+      "It must contain text",
+      "It must be sorted",
+      "It must have ten items",
+      "It must contain no zeros"
+    ],
+    "answer": 1,
+    "explanation": "Binary search uses sorted order to discard half the remaining search range on each comparison.",
+    "source": "https://docs.python.org/3/library/bisect.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "Database identity",
+    "prompt": "Which constraint uniquely identifies every row of a table?",
+    "choices": [
+      "DEFAULT",
+      "PRIMARY KEY",
+      "ORDER BY",
+      "LIKE"
+    ],
+    "answer": 1,
+    "explanation": "A PRIMARY KEY uniquely identifies rows and cannot contain NULL values.",
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/create-table.html"
+  },
+  {
+    "kind": "quiz",
+    "title": "Git basics",
+    "prompt": "Which Git command records staged changes as a commit?",
+    "choices": [
+      "git status",
+      "git add",
+      "git commit",
+      "git fetch"
+    ],
+    "answer": 2,
+    "explanation": "git commit records a new commit from the staged content by default.",
+    "source": "https://git-scm.com/docs/git-commit"
+  },
+  {
+    "kind": "quiz",
+    "title": "Gemini announcement · March 2026",
+    "prompt": "Which company announced Gemini 3.1 Flash-Lite on 3 March 2026?",
+    "choices": [
+      "Google",
+      "Mozilla",
+      "Intel",
+      "Oracle"
+    ],
+    "answer": 0,
+    "explanation": "Google’s official announcement dated 3 March 2026 introduced Gemini 3.1 Flash-Lite in preview.",
+    "source": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-lite/"
+  },
+  {
+    "kind": "quiz",
+    "title": "Majorana 1 · February 2025",
+    "prompt": "Which company announced the Majorana 1 quantum chip in February 2025?",
+    "choices": [
+      "Apple",
+      "Microsoft",
+      "NVIDIA",
+      "Samsung"
+    ],
+    "answer": 1,
+    "explanation": "Microsoft announced Majorana 1 on 19 February 2025. This question asks who announced it, without treating disputed technical performance claims as settled facts.",
+    "source": "https://news.microsoft.com/source/features/innovation/microsofts-majorana-1-chip-carves-new-path-for-quantum-computing/"
+  },
+  {
+    "kind": "quiz",
+    "title": "SPHEREx · March 2025",
+    "prompt": "NASA launched SPHEREx in March 2025. What type of scientific instrument is it?",
+    "choices": [
+      "An infrared space telescope",
+      "A Mars surface rover",
+      "An ocean-depth sensor",
+      "A lunar navigation satellite"
+    ],
+    "answer": 0,
+    "explanation": "SPHEREx is NASA’s infrared space telescope for mapping the sky and studying cosmic origins.",
+    "source": "https://science.nasa.gov/mission/spherex/"
+  },
+  {
+    "kind": "quiz",
+    "title": "Python 3.14 · October 2025",
+    "prompt": "Which major Python version had its stable 3.x.0 release on 7 October 2025?",
+    "choices": [
+      "Python 3.10",
+      "Python 3.14",
+      "Python 2.7",
+      "Python 3.8"
+    ],
+    "answer": 1,
+    "explanation": "The Python Software Foundation’s release page dates Python 3.14.0 to 7 October 2025.",
+    "source": "https://www.python.org/downloads/release/python-3140/"
+  }
+]
