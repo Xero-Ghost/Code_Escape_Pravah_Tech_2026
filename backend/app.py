@@ -109,19 +109,26 @@ def create_app(config=None):
             team = None
             member = None
         else:
-            team = repo.one(Team, {'email': {'$eq': email}})
-            require(team, 'Invalid email or password', 401)
+            if '@' in email:
+                team = repo.one(Team, {'email': {'$eq': email}})
+            else:
+                username = ''.join(email.split()).casefold()
+                candidates = [t for t in repo.find(Team, {}) if t.members and
+                              ''.join(t.members[0]['name'].split()).casefold() == username]
+                require(len(candidates) <= 1, 'This leader name is shared by multiple teams. Use the leader email instead.', 409)
+                team = candidates[0] if candidates else None
+            require(team, 'Invalid leader name/email or password', 401)
             leader = team.members[0]
             default_password = initial_password(leader['name'], leader['roll'])
             legacy_default = ''.join(leader['name'].split()) + default_password
             # Recognize only the old generated password; preserve custom hashes.
             if check_password_hash(team.password_hash, legacy_default):
-                require(password == default_password, 'Invalid email or password', 401)
+                require(password == default_password, 'Invalid leader name/email or password', 401)
                 team.password_hash = generate_password_hash(default_password)
                 audit('default_password_updated', team.id, 'Leader roll number default')
                 repo.commit()
             else:
-                require(check_password_hash(team.password_hash, password), 'Invalid email or password', 401)
+                require(check_password_hash(team.password_hash, password), 'Invalid leader name/email or password', 401)
             if b.get('member') is None:
                 return jsonify(members=team.members, team=team.name)
             member = b.get('member')
