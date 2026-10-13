@@ -382,7 +382,7 @@ def create_app(config=None):
             require(not in_bracket, 'A team already placed in the knockout bracket cannot be manually requalified', 409)
             require(t.status != 'qualified', 'This team is already qualified', 409)
             t.status = 'qualified'
-            t.reason = 'Manually qualified by organizer'
+            t.reason = 'Stage 1 manually cleared'
         if action != 'qualify':
             repo.delete_where(Session, {'team_id': {'$eq': id}})
         audit(action, id, b.get('reason', ''))
@@ -533,14 +533,18 @@ def create_app(config=None):
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
         b = body()
-        require(m.status in ['ready', 'tie'], 'Only a ready match or an exact tie can be manually advanced', 409)
+        require(m.status in ['ready', 'tie', 'complete'], 'Only a ready, tied or completed match can be manually advanced', 409)
         winner = b.get('winner')
         require(type(winner) is int and winner in [m.a, m.b], 'Choose one of the two teams in this match')
         reason = str(b.get('reason', '')).strip()
         require(bool(reason), 'A coordinator reason is required')
+        downstream = [later for later in repo.find(Match, {}) if later.round > m.round]
+        require(not any(later.status == 'live' for later in downstream), 'Finish or stop live matches before changing an earlier result', 409)
+        for later in downstream:
+            repo.delete(later)
         m.winner = winner
         m.status = 'complete'
-        audit('match_manual_advance', winner, f'Match {id}: {reason}')
+        audit('match_manual_advance', winner, f'Match {id}; cleared {len(downstream)} later-round matches; {reason}')
         advance_bracket()
         repo.commit()
         return jsonify(ok=True)

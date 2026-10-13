@@ -107,3 +107,14 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .rollback-drop{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:8px 0 12px;padding:9px;border:1px dashed #c59a7a;border-radius:7px;background:#fff8f1;color:#9b6243;font-size:10px;text-align:center;transition:background .15s,border-color .15s}
 .rollback-drop:hover{background:#f9eadc;border-color:#ad7655}
 .rollback-drop svg{flex:0 0 auto}
+
+/* Keep each knockout round aligned to the match slots feeding it. */
+.bracket{align-items:stretch;gap:18px;overflow-x:auto;padding:4px 4px 18px}
+.bracket-round{display:grid;grid-template-columns:minmax(360px,420px);grid-template-rows:44px repeat(var(--bracket-slots),minmax(180px,auto));row-gap:16px;align-content:start;flex:0 0 auto;min-width:360px;max-width:420px}
+.bracket-round>.round-heading{grid-row:1;margin:0 0 8px}
+.bracket-round>.match-card{align-self:center;width:100%;min-width:0;margin:0}
+.bracket-column-link{align-self:stretch;flex:0 0 32px;padding:0;align-items:center}
+.promotion-drop{min-height:52px;margin:10px 0 12px;border:2px dashed #cda581;background:#fff8ef;color:#875a3d;font-size:12px;font-weight:600;cursor:copy}
+.promotion-drop.drag-over{border-color:#d66f42;background:#fff0df;box-shadow:0 0 0 3px #d66f4222}
+.match-team[draggable="true"]{user-select:none;touch-action:none}
+@media(max-width:800px){.bracket-round{grid-template-columns:minmax(300px,85vw);min-width:0;max-width:85vw;grid-template-rows:44px repeat(var(--bracket-slots),minmax(170px,auto))}.bracket-column-link{flex-basis:24px}}
