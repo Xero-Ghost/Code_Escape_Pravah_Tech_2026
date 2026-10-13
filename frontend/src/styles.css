@@ -129,3 +129,6 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .placement-actions .text-button:disabled{opacity:.45}
 .qualification-team .qualify-link{flex-shrink:0}
 @media(max-width:800px){.bracket-round{grid-template-columns:minmax(300px,85vw);min-width:0;max-width:85vw;grid-template-rows:44px repeat(var(--bracket-slots),minmax(170px,auto))}.bracket-column-link{flex-basis:24px}}
+
+.exam-overlay{position:fixed;inset:0;z-index:2000;background:#f8f3eb;overflow:auto;padding:clamp(20px,4vw,64px)}
+.exam-paper{max-width:1100px;margin:0 auto;background:#fffdf8;border:1px solid #eadcca;border-radius:20px;padding:clamp(20px,4vw,56px);min-height:80vh}

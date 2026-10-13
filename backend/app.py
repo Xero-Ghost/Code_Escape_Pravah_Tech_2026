@@ -243,13 +243,12 @@ def create_app(config=None):
         active = s.stage == 'stage1' and team.status == 'playing' and (active_chamber is not None) or bool(live)
         if active:
             audit('fair_play', team.id, reason)
-            if s.strict_fair_play:
-                team.status = 'disqualified'
-                team.reason = reason
-                for m in live:
-                    m.winner = m.b if m.a == team.id else m.a
-                    m.status = 'complete'
-                advance_bracket()
+            team.status = 'disqualified'
+            team.reason = reason
+            for m in live:
+                m.winner = m.b if m.a == team.id else m.a
+                m.status = 'complete'
+            advance_bracket()
         repo.commit()
         return jsonify(ok=True)
 
