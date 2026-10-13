@@ -362,7 +362,7 @@ def create_app(config=None):
         t = team_locked(id)
         b = body()
         action = b.get('action')
-        require(action in ['reset', 'disqualify', 'revoke'], 'Unknown team action')
+        require(action in ['reset', 'disqualify', 'revoke', 'qualify'], 'Unknown team action')
         if action == 'reset':
             require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'), 'Cannot reset a team already in the knockout bracket', 409)
             repo.delete_where(Chamber, {'team_id': {'$eq': id}})
@@ -377,7 +377,14 @@ def create_app(config=None):
                 m.winner = m.b if m.a == id else m.a
                 m.status = 'complete'
             advance_bracket()
-        repo.delete_where(Session, {'team_id': {'$eq': id}})
+        if action == 'qualify':
+            in_bracket = repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id')
+            require(not in_bracket, 'A team already placed in the knockout bracket cannot be manually requalified', 409)
+            require(t.status != 'qualified', 'This team is already qualified', 409)
+            t.status = 'qualified'
+            t.reason = 'Manually qualified by organizer'
+        if action != 'qualify':
+            repo.delete_where(Session, {'team_id': {'$eq': id}})
         audit(action, id, b.get('reason', ''))
         repo.commit()
         return jsonify(ok=True)
@@ -516,6 +523,25 @@ def create_app(config=None):
         m.answers = answers
         settle_match(m, s)
         audit('match_answer', t.id, f'Match {id}, question {qid}')
+        repo.commit()
+        return jsonify(ok=True)
+
+    @app.post('/api/admin/matches/<int:id>/advance')
+    @auth(True)
+    def manually_advance_match(id):
+        settings(True)
+        m = repo.get(Match, id)
+        require(m, 'Match not found', 404)
+        b = body()
+        require(m.status in ['ready', 'tie'], 'Only a ready match or an exact tie can be manually advanced', 409)
+        winner = b.get('winner')
+        require(type(winner) is int and winner in [m.a, m.b], 'Choose one of the two teams in this match')
+        reason = str(b.get('reason', '')).strip()
+        require(bool(reason), 'A coordinator reason is required')
+        m.winner = winner
+        m.status = 'complete'
+        audit('match_manual_advance', winner, f'Match {id}: {reason}')
+        advance_bracket()
         repo.commit()
         return jsonify(ok=True)
 
