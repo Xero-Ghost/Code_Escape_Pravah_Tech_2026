@@ -545,6 +545,32 @@ def create_app(config=None):
         repo.commit()
         return jsonify(ok=True)
 
+    @app.post('/api/admin/matches/<int:id>/rollback')
+    @auth(True)
+    def rollback_match(id):
+        settings(True)
+        source = repo.get(Match, id)
+        require(source, 'Match not found', 404)
+        b = body()
+        team_id = b.get('team_id')
+        reason = str(b.get('reason', '')).strip()
+        require(type(team_id) is int and team_id in [source.a, source.b] and source.status == 'complete', 'Drop one of this match’s teams here', 409)
+        require(bool(reason), 'A coordinator reason is required')
+        all_matches = repo.find(Match, {})
+        next_round = [m for m in all_matches if m.round == source.round + 1]
+        require(any(team_id in [m.a, m.b] for m in next_round), 'That team has not advanced exactly one round from this match', 409)
+        downstream = [m for m in all_matches if m.round > source.round]
+        require(not any(m.status == 'live' for m in downstream), 'Finish or stop live matches before moving a team back', 409)
+        source.winner = None
+        source.status = 'ready'
+        source.started_at = None
+        source.answers = {}
+        for m in downstream:
+            repo.delete(m)
+        audit('bracket_rollback', team_id, f'Match {source.id}; removed {len(downstream)} later-round matches; {reason}')
+        repo.commit()
+        return jsonify(ok=True, removed_matches=len(downstream), round=source.round)
+
     @app.cli.command('init-db')
     def init_db():
         store.initialize()

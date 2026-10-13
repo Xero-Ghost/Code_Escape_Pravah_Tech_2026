@@ -70,3 +70,40 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 @media(max-width:800px){.qualification-tree{padding:18px}.qualification-flow{grid-template-columns:1fr;gap:9px}.tree-connector{height:18px;transform:rotate(90deg)}.qualification-flow>.tree-connector:nth-of-type(4){display:flex}.qualification-flow>.rounds-lane{grid-column:auto}.qualification-list{max-height:220px}.bracket-tree{padding:18px 14px}.bracket{align-items:flex-start}.bracket-round{min-width:min(78vw,300px)}.bracket-column-link{padding-top:68px}}
 @media(max-width:500px){.qualification-heading{align-items:flex-start}.qualification-heading h2{font-size:16px}.qual-summary{min-width:65px}.qualification-team{gap:6px}.qualification-team .badge{font-size:7px}.bracket-tree-heading{align-items:flex-start}.bracket-tree-heading h2{font-size:16px}.bracket-column-link{flex-basis:18px}.seed-row{gap:6px;padding:8px}.seed-row .icon-button{padding:6px}}
 .promotion-drop{display:flex;align-items:center;justify-content:center;gap:7px;min-height:37px;margin:6px 0 8px;padding:7px;border:1px dashed #d7b999;border-radius:6px;background:#fffaf3;color:#a67b58;font-size:9px}.promotion-drop svg{flex-shrink:0}.match-team[draggable="true"]{cursor:grab}.match-team[draggable="true"]:active{cursor:grabbing}
+
+/* Give coordinators a readable, roomier progression map. */
+.qualification-tree{padding:32px;margin-bottom:34px}
+.qualification-heading h2,.bracket-tree-heading h2{font-size:25px}
+.qualification-heading p{font-size:13px}
+.qualification-flow{grid-template-columns:minmax(330px,1.35fr) 48px minmax(300px,1.1fr) 48px minmax(260px,.95fr);gap:14px;margin-top:28px}
+.qualification-lane{padding:20px}
+.qualification-lane-heading{margin-bottom:18px}
+.qualification-lane-heading h3{font-size:16px}
+.qualification-lane-heading small{font-size:11px}
+.qualification-list{max-height:420px;gap:10px}
+.qualification-team{padding:11px;gap:10px}
+.qualification-team-copy strong{font-size:12px}
+.qualification-team-copy small{font-size:10px}
+.qualification-team .badge,.qualify-link{font-size:10px}
+.round-overview{gap:10px}
+.round-overview>div{padding:12px;gap:5px 10px}
+.round-overview span{font-size:12px}
+.round-overview strong{font-size:11px}
+.round-overview small{font-size:10px}
+.bracket-tree{padding:32px;margin-bottom:36px}
+.bracket{gap:16px;padding-bottom:16px}
+.bracket-round{min-width:340px;max-width:410px}
+.match-card{padding:20px;margin-bottom:16px}
+.match-team{padding:15px 13px;min-height:52px;font-size:13px}
+.match-meta{font-size:10px}
+.winner-path,.promotion-drop{font-size:10px;padding:10px}
+.seed-list{max-height:55vh;overflow:auto;padding:2px}
+.seed-row{min-height:54px;user-select:none;touch-action:pan-y}
+.seed-row:focus-within{outline:2px solid #dcbfa4;outline-offset:1px}
+.seed-row[draggable="true"]{cursor:grab}
+.seed-row[draggable="true"]:active{cursor:grabbing}
+@media(max-width:1150px){.qualification-flow{grid-template-columns:minmax(260px,1fr) 34px minmax(250px,1fr)}.qualification-flow>.tree-connector:nth-of-type(4){display:none}.qualification-flow>.rounds-lane{grid-column:1/-1}.rounds-lane .round-overview{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}}
+@media(max-width:800px){.qualification-tree{padding:20px}.qualification-flow{grid-template-columns:1fr;gap:10px}.qualification-flow>.tree-connector{height:24px;transform:rotate(90deg)}.qualification-flow>.tree-connector:nth-of-type(4){display:flex}.qualification-flow>.rounds-lane{grid-column:auto}.qualification-list{max-height:300px}.bracket-tree{padding:20px 14px}.bracket-round{min-width:min(85vw,360px)}.match-card{padding:16px}}
+.rollback-drop{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;margin:8px 0 12px;padding:9px;border:1px dashed #c59a7a;border-radius:7px;background:#fff8f1;color:#9b6243;font-size:10px;text-align:center;transition:background .15s,border-color .15s}
+.rollback-drop:hover{background:#f9eadc;border-color:#ad7655}
+.rollback-drop svg{flex:0 0 auto}
