@@ -110,7 +110,18 @@ def create_app(config=None):
             member = None
         else:
             team = repo.one(Team, {'email': {'$eq': email}})
-            require(team and check_password_hash(team.password_hash, password), 'Invalid email or password', 401)
+            require(team, 'Invalid email or password', 401)
+            leader = team.members[0]
+            default_password = initial_password(leader['name'], leader['roll'])
+            legacy_default = ''.join(leader['name'].split()) + default_password
+            # Recognize only the old generated password; preserve custom hashes.
+            if check_password_hash(team.password_hash, legacy_default):
+                require(password == default_password, 'Invalid email or password', 401)
+                team.password_hash = generate_password_hash(default_password)
+                audit('default_password_updated', team.id, 'Leader roll number default')
+                repo.commit()
+            else:
+                require(check_password_hash(team.password_hash, password), 'Invalid email or password', 401)
             if b.get('member') is None:
                 return jsonify(members=team.members, team=team.name)
             member = b.get('member')

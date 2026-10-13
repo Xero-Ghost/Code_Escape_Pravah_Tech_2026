@@ -3,7 +3,7 @@ from io import BytesIO
 from openpyxl import load_workbook
 
 def initial_password(name, roll):
-    return re.sub(r'\s+', '', name) + re.sub(r'\s+', '', roll)
+    return re.sub(r'\s+', '', roll)
 
 def parse_workbook(content):
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
