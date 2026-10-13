@@ -117,4 +117,15 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .promotion-drop{min-height:52px;margin:10px 0 12px;border:2px dashed #cda581;background:#fff8ef;color:#875a3d;font-size:12px;font-weight:600;cursor:copy}
 .promotion-drop.drag-over{border-color:#d66f42;background:#fff0df;box-shadow:0 0 0 3px #d66f4222}
 .match-team[draggable="true"]{user-select:none;touch-action:none}
+.qualification-lane.drag-over{outline:3px solid #d66f4266;outline-offset:2px;background:#fff8ef}
+.qualification-team[draggable="true"]{cursor:grab;user-select:none;touch-action:none}
+.qualification-team[draggable="true"]:active{cursor:grabbing}
+.match-card.drag-over{outline:3px solid #d66f4266;outline-offset:2px;background:#fff8ef}
+.match-team-row{display:grid;gap:6px;margin:7px 0}
+.match-team-row .match-team{margin:0}
+.placement-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.placement-actions .text-button{min-height:30px;padding:5px 9px;border:1px solid #eee1d1;border-radius:6px;background:#fffaf4;color:#94694b;font-size:10px}
+.placement-actions .text-button:hover:not(:disabled){background:#f8eadb;color:#a64f31}
+.placement-actions .text-button:disabled{opacity:.45}
+.qualification-team .qualify-link{flex-shrink:0}
 @media(max-width:800px){.bracket-round{grid-template-columns:minmax(300px,85vw);min-width:0;max-width:85vw;grid-template-rows:44px repeat(var(--bracket-slots),minmax(170px,auto))}.bracket-column-link{flex-basis:24px}}

@@ -362,7 +362,7 @@ def create_app(config=None):
         t = team_locked(id)
         b = body()
         action = b.get('action')
-        require(action in ['reset', 'disqualify', 'revoke', 'qualify'], 'Unknown team action')
+        require(action in ['reset', 'disqualify', 'revoke', 'qualify', 'unqualify', 'restore'], 'Unknown team action')
         if action == 'reset':
             require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'), 'Cannot reset a team already in the knockout bracket', 409)
             repo.delete_where(Chamber, {'team_id': {'$eq': id}})
@@ -383,6 +383,17 @@ def create_app(config=None):
             require(t.status != 'qualified', 'This team is already qualified', 409)
             t.status = 'qualified'
             t.reason = 'Stage 1 manually cleared'
+        if action == 'unqualify':
+            in_bracket = repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id')
+            require(t.status == 'qualified' and not in_bracket, 'Move the team out of the round tree before returning it to Stage 1', 409)
+            repo.delete_where(Chamber, {'team_id': {'$eq': id}})
+            t.status = 'registered'
+            t.reason = None
+            t.started_at = None
+        if action == 'restore':
+            require(t.status == 'disqualified', 'Only a disqualified team can be restored', 409)
+            t.status = 'qualified'
+            t.reason = 'Restored by coordinator'
         if action != 'qualify':
             repo.delete_where(Session, {'team_id': {'$eq': id}})
         audit(action, id, b.get('reason', ''))
@@ -572,6 +583,33 @@ def create_app(config=None):
         for m in downstream:
             repo.delete(m)
         audit('bracket_rollback', team_id, f'Match {source.id}; removed {len(downstream)} later-round matches; {reason}')
+        repo.commit()
+        return jsonify(ok=True, removed_matches=len(downstream), round=source.round)
+
+    @app.post('/api/admin/teams/<int:id>/unseed')
+    @auth(True)
+    def unseed_team(id):
+        settings(True)
+        team = repo.get(Team, id)
+        require(team and team.status == 'qualified', 'Only a qualified team can move back to the qualified pool', 409)
+        matches = repo.find(Match, {})
+        source_round = min((m.round for m in matches if id in [m.a, m.b]), default=None)
+        require(source_round is not None, 'This team is not in the round tree', 409)
+        source = next(m for m in matches if m.round == source_round and id in [m.a, m.b])
+        require(source.status != 'live', 'Finish or stop this live match before moving the team down', 409)
+        opponent = source.b if source.a == id else source.a
+        require(opponent, 'A team with an automatic bye cannot be removed from this seed; rebuild the seed order', 409)
+        downstream = [m for m in matches if m.round > source.round]
+        require(not any(m.status == 'live' for m in downstream), 'Finish or stop live later-round matches before moving a team down', 409)
+        for later in downstream:
+            repo.delete(later)
+        source.a, source.b = opponent, None
+        source.winner = opponent
+        source.status = 'complete'
+        source.started_at = None
+        source.answers = {}
+        audit('bracket_unseed', id, f'Match {source.id}; cleared {len(downstream)} later-round matches')
+        advance_bracket()
         repo.commit()
         return jsonify(ok=True, removed_matches=len(downstream), round=source.round)
 
