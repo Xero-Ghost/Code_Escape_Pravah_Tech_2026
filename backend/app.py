@@ -179,8 +179,14 @@ def create_app(config=None):
                 if c.member == g.session.member and team.status == 'playing' and (c.submitted_at is None):
                     item['question'] = question_json(repo.get(Question, c.question_id))
                 result['chambers'].append(item)
-        result['matches'] = [match_json(m) for m in repo.find(Match, {}, sort=[('round', 1), ('position', 1)])]
-        result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {})}
+        all_matches = repo.find(Match, {}, sort=[('round', 1), ('position', 1)])
+        if g.session.admin:
+            result['matches'] = [dict(match_json(m), question_ids=m.question_ids) for m in all_matches]
+            result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {})}
+        else:
+            result['matches'] = [match_json(m) for m in all_matches if team.id in [m.a, m.b]]
+            visible_ids = {team.id, *(t for m in result['matches'] for t in [m['a'], m['b']] if t)}
+            result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {}) if t.id in visible_ids}
         repo.commit()
         return jsonify(result)
 
@@ -485,6 +491,23 @@ def create_app(config=None):
             repo.add(Match(round=1, position=i, label='Final' if size == 2 else 'Semifinal' if size == 4 else 'Knockout', a=a, b=bid, question_ids=questions_for_match(), answers={}, winner=a if bid is None else None, status='complete' if bid is None else 'ready'))
         advance_bracket()
         audit('bracket_reseeded' if existing else 'bracket_created', detail=ids)
+        repo.commit()
+        return jsonify(ok=True)
+
+    @app.patch('/api/admin/matches/<int:id>/questions')
+    @auth(True)
+    def update_match_questions(id):
+        settings(True)
+        match = repo.get(Match, id)
+        require(match, 'Match not found', 404)
+        require(match.status == 'ready' and match.started_at is None,
+                'Questions can only be changed before the match starts', 409)
+        ids = body().get('question_ids')
+        require(isinstance(ids, list) and len(ids) == 3 and all(type(qid) is int for qid in ids)
+                and len(set(ids)) == 3, 'Choose exactly three different questions')
+        require(all(repo.get(Question, qid) for qid in ids), 'A selected question no longer exists', 409)
+        match.question_ids = ids
+        audit('match_questions_updated', detail=f'Match {id}: {ids}')
         repo.commit()
         return jsonify(ok=True)
 
