@@ -461,7 +461,14 @@ def create_app(config=None):
     def bracket():
         s = settings(True)
         b = body()
-        require(not repo.one(Match, {}, field='id'), 'The bracket is already generated', 409)
+        existing = repo.find(Match, {})
+        if existing:
+            require(b.get('reseed') is True, 'The bracket is already generated', 409)
+            require(not any(m.status == 'live' for m in existing), 'Finish all live matches before reseeding', 409)
+            require(not any(m.started_at is not None or m.answers for m in existing),
+                    'Played matches cannot be discarded; finish the current bracket first', 409)
+            for m in existing:
+                repo.delete(m)
         ids = b.get('team_ids')
         qualified = list(repo.find(Team, {'status': {'$eq': 'qualified'}}, field='id'))
         require(isinstance(ids, list) and all((type(x) is int for x in ids)) and (len(ids) >= 2) and (len(set(ids)) == len(ids)) and (set(ids) == set(qualified)), 'Include every qualified team exactly once, in your chosen seed order')
@@ -476,7 +483,8 @@ def create_app(config=None):
         pairs += [(remaining[i], remaining[i + 1]) for i in range(0, len(remaining), 2)]
         for i, (a, bid) in enumerate(pairs):
             repo.add(Match(round=1, position=i, label='Final' if size == 2 else 'Semifinal' if size == 4 else 'Knockout', a=a, b=bid, question_ids=questions_for_match(), answers={}, winner=a if bid is None else None, status='complete' if bid is None else 'ready'))
-        audit('bracket_created', detail=ids)
+        advance_bracket()
+        audit('bracket_reseeded' if existing else 'bracket_created', detail=ids)
         repo.commit()
         return jsonify(ok=True)
 
