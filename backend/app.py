@@ -547,6 +547,100 @@ def create_app(config=None):
         repo.commit()
         return jsonify(ok=True)
 
+    @app.get('/api/admin/teams/<int:id>/test-preview')
+    @auth(True)
+    def admin_test_preview(id):
+        team = repo.get(Team, id)
+        require(team, 'Team not found', 404)
+        chambers = repo.find(Chamber, {'team_id': {'$eq': id}})
+        matches = [m for m in repo.find(Match, {}) if id in [m.a, m.b]]
+        return jsonify(chambers=[{k: getattr(c, k) for k in
+            ['slot', 'member', 'question_id', 'submitted_at', 'correct']} for c in chambers],
+            matches=[dict(match_json(m), question_ids=m.question_ids,
+                answered=list((m.answers or {}).get(str(id), {}))) for m in matches])
+
+    @app.post('/api/admin/teams/<int:id>/apply-practice')
+    @auth(True)
+    def apply_practice(id):
+        s = settings(True)
+        team = repo.get(Team, id)
+        require(team, 'Team not found', 404)
+        b = body()
+        require(b.get('confirm') is True, 'Confirm applying practice results to the real test')
+        rows = b.get('answers')
+        require(isinstance(rows, list) and 1 <= len(rows) <= 4, 'Submit between one and four practice answers')
+        now = time.time()
+        graded = []
+        for row in rows:
+            require(isinstance(row, dict), 'Invalid practice answer')
+            member, qid, elapsed = row.get('member'), row.get('question_id'), row.get('elapsed')
+            require(type(member) is int and 0 <= member < 4, 'Choose a team member')
+            require(type(qid) is int, 'Invalid question')
+            q = repo.get(Question, qid)
+            require(q, 'Question no longer exists', 409)
+            require(type(elapsed) in [int, float] and 0 <= elapsed <= 86400, 'Invalid recorded solving time')
+            answer = row.get('answer')
+            if q.kind == 'arrange':
+                require(isinstance(answer, list) and all(type(i) is int for i in answer)
+                        and sorted(answer) == list(range(len(q.choices))), 'Invalid line arrangement')
+            else:
+                require(type(answer) is int and 0 <= answer < len(q.choices), 'Invalid answer choice')
+            graded.append((row, q, answer == q.answer))
+        if b.get('mode') == 'stage1':
+            require(s.stage == 'stage1', 'Open Stage 1 before applying real chamber results', 409)
+            require(team.status in ['registered', 'playing'], 'Only a registered or playing team can receive chamber results', 409)
+            require(not any(id in [m.a, m.b] for m in repo.find(Match, {})), 'This team is already in the round tree', 409)
+            chambers = repo.find(Chamber, {'team_id': {'$eq': id}})
+            slots, members = set(), set()
+            for row, q, correct in graded:
+                slot = row.get('slot')
+                require(type(slot) is int and 0 <= slot < 4 and q.kind == KINDS[slot], 'Question does not belong to this chamber')
+                require(slot not in slots and row['member'] not in members, 'Each member can submit only one chamber')
+                slots.add(slot); members.add(row['member'])
+                require(row['elapsed'] <= s.chamber_seconds[slot], 'Practice exceeded the chamber timer; restart practice', 409)
+                existing = next((c for c in chambers if c.slot == slot), None)
+                require(not any(c.member == row['member'] and c.slot != slot for c in chambers), 'Member already owns a different chamber', 409)
+                if existing:
+                    require(existing.member == row['member'] and existing.question_id == q.id,
+                            'Real chamber assignment differs; reload the preview', 409)
+                    require(existing.submitted_at is None, 'Real chamber already submitted; no results were changed', 409)
+                    require(now < existing.started_at + s.chamber_seconds[slot], 'Real chamber timer has expired', 409)
+            started = min(now - row['elapsed'] for row, _, _ in graded)
+            team.started_at = team.started_at if team.started_at is not None else started
+            require(now < team.started_at + s.total_seconds, 'Real team timer has expired', 409)
+            for row, q, correct in graded:
+                c = next((c for c in chambers if c.slot == row['slot']), None)
+                if c is None:
+                    c = Chamber(team_id=id, slot=row['slot'], member=row['member'], question_id=q.id,
+                                started_at=now-row['elapsed'])
+                    repo.add(c); chambers.append(c)
+                c.correct, c.submitted_at = correct, now
+            team.status = 'eliminated' if any(c.correct is False for c in chambers) else 'qualified' if len(chambers) == 4 and all(c.correct for c in chambers) else 'playing'
+            team.reason = 'An incorrect chamber answer (admin-applied practice)' if team.status == 'eliminated' else None
+        elif b.get('mode') == 'match':
+            require(s.stage == 'stage2' and team.status == 'qualified', 'Open Stage 2 for a qualified team', 409)
+            match_id = b.get('match_id')
+            require(type(match_id) is int, 'Select a real match')
+            m = repo.get(Match, match_id)
+            require(m and id in [m.a, m.b], 'Match does not belong to this team', 409)
+            require(m.status == 'live' and now < m.started_at + s.match_seconds, 'Real match must be live and within its timer', 409)
+            answers = dict(m.answers or {})
+            entries = dict(answers.get(str(id), {}))
+            for row, q, correct in graded:
+                require(q.id in m.question_ids, 'Question is not assigned to this match', 409)
+                require(str(q.id) not in entries, 'This question already has a real answer; no results were changed', 409)
+                require(row['elapsed'] <= s.match_seconds, 'Practice exceeded the match timer', 409)
+                entries[str(q.id)] = dict(correct=correct, elapsed=round(row['elapsed'], 3), member=row['member'])
+            answers[str(id)] = entries
+            m.answers = answers
+            settle_match(m, s)
+        else:
+            raise ArenaError('Choose Stage 1 or a real match')
+        audit('practice_applied', id, f"Admin applied {len(graded)} answers; mode={b['mode']}; " +
+              '; '.join(f"member={row['member']+1}, question={q.id}, correct={correct}" for row, q, correct in graded))
+        repo.commit()
+        return jsonify(ok=True, correct=sum(correct for _, _, correct in graded), total=len(graded))
+
     @app.post('/api/admin/matches/<int:id>/advance')
     @auth(True)
     def manually_advance_match(id):
