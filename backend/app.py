@@ -547,8 +547,11 @@ def create_app(config=None):
         require(m.status in ['ready', 'tie', 'complete'], 'Only a ready, tied or completed match can be manually advanced', 409)
         winner = b.get('winner')
         require(type(winner) is int and winner in [m.a, m.b], 'Choose one of the two teams in this match')
-        reason = str(b.get('reason', '')).strip()
-        require(bool(reason), 'A coordinator reason is required')
+        reason = str(b.get('reason', '')).strip() or 'Coordinator moved team'
+        team = repo.get(Team, winner)
+        require(team and team.status == 'qualified', 'Restore this team before moving it up', 409)
+        if m.status == 'complete' and m.winner == winner:
+            return jsonify(ok=True)
         downstream = [later for later in repo.find(Match, {}) if later.round > m.round]
         require(not any(later.status == 'live' for later in downstream), 'Finish or stop live matches before changing an earlier result', 409)
         for later in downstream:
@@ -568,9 +571,8 @@ def create_app(config=None):
         require(source, 'Match not found', 404)
         b = body()
         team_id = b.get('team_id')
-        reason = str(b.get('reason', '')).strip()
+        reason = str(b.get('reason', '')).strip() or 'Coordinator moved team'
         require(type(team_id) is int and team_id in [source.a, source.b] and source.status == 'complete', 'Drop one of this match’s teams here', 409)
-        require(bool(reason), 'A coordinator reason is required')
         all_matches = repo.find(Match, {})
         next_round = [m for m in all_matches if m.round == source.round + 1]
         require(any(team_id in [m.a, m.b] for m in next_round), 'That team has not advanced exactly one round from this match', 409)
@@ -598,11 +600,12 @@ def create_app(config=None):
         source = next(m for m in matches if m.round == source_round and id in [m.a, m.b])
         require(source.status != 'live', 'Finish or stop this live match before moving the team down', 409)
         opponent = source.b if source.a == id else source.a
-        require(opponent, 'A team with an automatic bye cannot be removed from this seed; rebuild the seed order', 409)
         downstream = [m for m in matches if m.round > source.round]
         require(not any(m.status == 'live' for m in downstream), 'Finish or stop live later-round matches before moving a team down', 409)
         for later in downstream:
             repo.delete(later)
+        if opponent is None:
+            repo.delete(source)
         source.a, source.b = opponent, None
         source.winner = opponent
         source.status = 'complete'
