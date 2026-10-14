@@ -136,3 +136,11 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .modal:has(.admin-test-workspace){width:min(1100px,96vw);max-width:1100px}.admin-test-workspace .actions{margin:20px 0}.admin-test-workspace .panel{margin-top:20px}
 
 .question-prompt p{font-size:inherit;line-height:1.8;margin:0 0 1em}.question-hint{margin:16px 0}.question-hint p{padding:16px;border-left:3px solid var(--accent,#c47b53);background:#fff5e6;line-height:1.7;white-space:pre-wrap}
+
+.round2-question{--round2-red:#b42318;--round2-red-soft:#fff1f0}
+.round2-question .question-header .eyebrow{color:var(--round2-red)}
+.round2-question h2{color:var(--round2-red)}
+.round2-question .timer{color:var(--round2-red);border-color:#f2b8b5;background:var(--round2-red-soft)}
+.round2-question .answers>button.selected{border-color:var(--round2-red);background:var(--round2-red-soft);color:#8f1d16}
+.round2-question .answers>button.selected>span:first-child{background:#fbd5d2;color:var(--round2-red)}
+.round2-question>button.primary,.round2-question .submit-confirm button.primary{background:var(--round2-red)}
