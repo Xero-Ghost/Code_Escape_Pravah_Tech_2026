@@ -105,7 +105,8 @@ def create_app(config=None):
         admin = b.get('admin') is True
         email = str(b.get('email', '')).strip().lower()
         password = str(b.get('password', ''))
-        key = digest(('admin' if admin else email) + ':' + str(request.remote_addr))
+        username = ''.join(email.split()).casefold()
+        key = digest(('admin' if admin else username) + ':' + str(request.remote_addr))
         if admin:
             require(app.config['ADMIN_PASSWORD_HASH'] and check_password_hash(app.config['ADMIN_PASSWORD_HASH'], password), 'Invalid admin password', 401)
             team = None
@@ -114,11 +115,15 @@ def create_app(config=None):
             if '@' in email:
                 team = repo.one(Team, {'email': {'$eq': email}})
             else:
-                username = ''.join(email.split()).casefold()
-                candidates = [t for t in repo.find(Team, {}) if t.members and
-                              ''.join(t.members[0]['name'].split()).casefold() == username]
-                require(len(candidates) <= 1, 'This leader name is shared by multiple teams. Use the leader email instead.', 409)
-                team = candidates[0] if candidates else None
+                team = repo.one(Team, {'username': {'$eq': username}})
+                if team is None:
+                    # Existing records from before username indexing can still sign in.
+                    candidates = [t for t in repo.find(Team, {}) if t.members and
+                                  ''.join(t.members[0]['name'].split()).casefold() == username]
+                    require(len(candidates) <= 1, 'This leader name is shared by multiple teams. Ask the organizer to update the team names.', 409)
+                    team = candidates[0] if candidates else None
+                    if team is not None:
+                        team.username = username
             require(team, 'Invalid leader name/email or password', 401)
             leader = team.members[0]
             default_password = initial_password(leader['name'], leader['roll'])
@@ -362,7 +367,7 @@ def create_app(config=None):
             count = 0
             for t in parsed['teams']:
                 if not t['exists']:
-                    repo.add(Team(name=t['name'], email=t['email'], members=t['members'], password_hash=generate_password_hash(t['password'])))
+                    repo.add(Team(name=t['name'], email=t['email'], username=''.join(t['members'][0]['name'].split()).casefold(), members=t['members'], password_hash=generate_password_hash(t['password'])))
                     count += 1
             audit('excel_import', detail=f'{count} teams added; existing emails skipped')
             repo.commit()
@@ -384,7 +389,7 @@ def create_app(config=None):
         validate_team(b)
         password = b.get('password') or initial_password(b['members'][0]['name'], b['members'][0]['roll'])
         require(isinstance(password, str) and len(password) >= 8, 'Password must be at least 8 characters')
-        t = Team(name=b['name'], email=b['email'].strip().lower(), members=b['members'], password_hash=generate_password_hash(password))
+        t = Team(name=b['name'], email=b['email'].strip().lower(), username=''.join(b['members'][0]['name'].split()).casefold(), members=b['members'], password_hash=generate_password_hash(password))
         repo.add(t)
         audit('team_added', detail=b['name'])
         repo.commit()
@@ -402,6 +407,8 @@ def create_app(config=None):
         for key in ['name', 'email', 'members']:
             if key in b:
                 setattr(t, key, b[key].strip().lower() if key == 'email' else b[key])
+        if 'members' in b:
+            t.username = ''.join(t.members[0]['name'].split()).casefold()
         for key in ['valid_from', 'valid_until']:
             if key in b:
                 require(b[key] is None or (type(b[key]) in [int, float] and 0 <= b[key] <= 4102444800), 'Invalid credential date')

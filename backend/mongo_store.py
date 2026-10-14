@@ -185,6 +185,7 @@ class MongoStore:
                 self.database.counters.update_one({'_id':model.collection},
                     {'$max':{'value':last['_id'] if last else 0}}, upsert=True)
         self.database.team.create_index('email', unique=True)
+        self.database.team.create_index('username', unique=True, sparse=True)
         self.database.session.create_index([('team_id', 1), ('expires', 1), ('seen', 1)])
         self.database.session.create_index('purge_at', expireAfterSeconds=0)
         self.database.question.create_index('kind')
@@ -196,6 +197,13 @@ class MongoStore:
         self.database.login_attempt.create_index('purge_at', expireAfterSeconds=0)
         self.database.control.update_one({'_id':'event'}, {'$setOnInsert':{'revision':0}}, upsert=True)
         self.database.settings.update_one({'_id':1}, {'$setOnInsert':Settings().document()}, upsert=True)
+        # Backfill normalized leader usernames once so participant sign-in uses an indexed lookup.
+        for document in self.database.team.find({'username': {'$exists': False}}, {'_id':1, 'members':1}):
+            members = document.get('members') or []
+            if members:
+                username = ''.join(str(members[0].get('name', '')).split()).casefold()
+                if username:
+                    self.database.team.update_one({'_id':document['_id']}, {'$set':{'username':username}})
 
     def login_bucket(self, key):
         # Separate failed-password counters from the legacy all-request counter.
