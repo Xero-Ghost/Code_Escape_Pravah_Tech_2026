@@ -76,7 +76,8 @@ def create_app(config=None):
                     s = settings()
                     require(team is not None, 'Team no longer exists', 401)
                     require((team.valid_from if team.valid_from is not None else s.valid_from) <= now < (team.valid_until if team.valid_until is not None else s.valid_until), 'Team credentials are outside their validity window', 403)
-                session.seen = now
+                if now - (session.seen or 0) >= 30:
+                    session.seen = now
                 g.session = session
                 return fn(*args, **kwargs)
             return wrapped
@@ -174,7 +175,6 @@ def create_app(config=None):
     def state():
         now = time.time()
         s = settings(True)
-        g.session.seen = now
         live_filter = {'status': {'$eq': 'live'}}
         if not g.session.admin:
             live_filter['$or'] = [{'a': g.session.team_id}, {'b': g.session.team_id}]
@@ -184,6 +184,7 @@ def create_app(config=None):
         if g.session.admin:
             advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
             known_questions = {q.title: q for q in repo.find(Question, {})}
+            new_questions = []
             for question in advanced:
                 existing = known_questions.get(question['title'])
                 if existing:
@@ -191,7 +192,8 @@ def create_app(config=None):
                     existing.difficulty = question.get('difficulty', '')
                     existing.topic_area = question.get('topic_area', '')
                 else:
-                    repo.add(Question(**validate_question(question)))
+                    new_questions.append(Question(**validate_question(question)))
+            repo.add_many(new_questions)
             teams = repo.find(Team, {}, sort=[('_id', 1)])
             playing_ids = [t.id for t in teams if t.status == 'playing']
             chamber_groups = {}
@@ -555,6 +557,7 @@ def create_app(config=None):
                 repo.delete(m)
         advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
         known_questions = {q.title: q for q in repo.find(Question, {})}
+        new_questions = []
         for question in advanced:
             existing_question = known_questions.get(question['title'])
             if existing_question:
@@ -562,7 +565,8 @@ def create_app(config=None):
                 existing_question.difficulty = question.get('difficulty', '')
                 existing_question.topic_area = question.get('topic_area', '')
             else:
-                repo.add(Question(**validate_question(question)))
+                new_questions.append(Question(**validate_question(question)))
+        repo.add_many(new_questions)
         ids = b.get('team_ids')
         qualified = list(repo.find(Team, {'status': {'$eq': 'qualified'}}, field='id'))
         require(isinstance(ids, list) and all((type(x) is int for x in ids)) and (len(ids) >= 2) and (len(set(ids)) == len(ids)) and (set(ids) == set(qualified)), 'Include every qualified team exactly once, in your chosen seed order')

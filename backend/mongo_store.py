@@ -6,7 +6,7 @@ import hashlib
 import time
 
 from flask import g, jsonify, request, has_request_context
-from pymongo import MongoClient, ReturnDocument, timeout
+from pymongo import MongoClient, ReturnDocument, ReplaceOne, DeleteOne, timeout
 from pymongo.errors import PyMongoError, BulkWriteError, DuplicateKeyError
 from pymongo.read_concern import ReadConcern
 from pymongo.write_concern import WriteConcern
@@ -92,6 +92,21 @@ class Repository:
         self.objects[key] = obj
         self.originals[key] = None
 
+    def add_many(self, objects):
+        objects = list(objects)
+        if not objects:
+            return
+        collection = objects[0].collection
+        if any(obj.collection != collection or getattr(obj, obj.pk) is not None for obj in objects):
+            raise ValueError('Bulk insert requires new objects from one collection')
+        counter = self.database.counters.find_one_and_update(
+            {'_id': collection}, {'$inc': {'value': len(objects)}}, upsert=True,
+            return_document=ReturnDocument.AFTER, session=self.session)
+        start = counter['value'] - len(objects) + 1
+        for identity, obj in enumerate(objects, start):
+            setattr(obj, obj.pk, identity)
+            self.add(obj)
+
     def delete(self, obj):
         self.deleted.add((obj.collection, getattr(obj, obj.pk)))
 
@@ -116,19 +131,25 @@ class Repository:
                 raise
             for key, document in entries:
                 self.originals[key] = deepcopy(document)
+        changes = {}
+        snapshots = {}
         for key, obj in list(self.objects.items()):
             if key in self.deleted:
-                self.database[key[0]].delete_one({'_id': key[1]}, session=self.session)
-                del self.objects[key]
-                self.originals.pop(key, None)
+                changes.setdefault(key[0], []).append(DeleteOne({'_id': key[1]}))
+                snapshots[key] = None
                 continue
             document = obj.document()
-            original = self.originals[key]
-            if original is None:
-                self.database[key[0]].insert_one(document, session=self.session)
-            elif document != original:
-                self.database[key[0]].replace_one({'_id': key[1]}, document, session=self.session)
-            self.originals[key] = deepcopy(document)
+            if document != self.originals[key]:
+                changes.setdefault(key[0], []).append(ReplaceOne({'_id': key[1]}, document))
+                snapshots[key] = document
+        for collection, operations in changes.items():
+            self.database[collection].bulk_write(operations, session=self.session)
+        for key, document in snapshots.items():
+            if document is None:
+                self.objects.pop(key, None)
+                self.originals.pop(key, None)
+            else:
+                self.originals[key] = deepcopy(document)
 
     def commit(self):
         # Actual commit is performed by with_transaction after the response is built.
@@ -195,8 +216,11 @@ class MongoStore:
 
     def run(self, callback, lock=False, arena_error=None):
         self.ping_if_missing()
+        g.mongo_started_at = time.monotonic()
+        g.mongo_attempts = 0
         with self.client.start_session() as session:
             def transaction(active):
+                g.mongo_attempts += 1
                 g.mongo_repository = Repository(self.database, active)
                 if lock:
                     # A shared write prevents write skew between question edits, claims,
@@ -228,7 +252,10 @@ def install_transactions(app, store, arena_error):
     @app.errorhandler(PyMongoError)
     def unavailable(error):
         # Never expose connection strings, passwords or document contents.
-        app.logger.error('MongoDB operation failed: %s', type(error).__name__)
+        app.logger.error('MongoDB operation failed: %s endpoint=%s elapsed=%.2fs attempts=%s',
+            type(error).__name__, request.endpoint,
+            time.monotonic() - getattr(g, 'mongo_started_at', time.monotonic()),
+            getattr(g, 'mongo_attempts', 0))
         return jsonify(error='Database is temporarily unavailable. Please try again.'), 503
 
     @app.errorhandler(RuntimeError)
