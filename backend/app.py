@@ -69,13 +69,14 @@ def create_app(config=None):
                 token = request.headers.get('Authorization', '').removeprefix('Bearer ')
                 session = repo.get(Session, digest(token)) if token else None
                 now = time.time()
-                require(session and session.expires > now and (session.admin or session.seen > now - 90), 'Session expired. Please log in again.', 401)
+                require(session and session.expires > now, 'Session expired. Please log in again.', 401)
                 require(not admin or session.admin, 'Admin access required', 403)
                 if not session.admin:
                     team = repo.get(Team, session.team_id)
                     s = settings()
                     require(team is not None, 'Team no longer exists', 401)
                     require((team.valid_from if team.valid_from is not None else s.valid_from) <= now < (team.valid_until if team.valid_until is not None else s.valid_until), 'Team credentials are outside their validity window', 403)
+                session.seen = now
                 g.session = session
                 return fn(*args, **kwargs)
             return wrapped
@@ -138,6 +139,9 @@ def create_app(config=None):
             active = repo.find(Session, {'$and': [{'team_id': {'$eq': team.id}}, {'expires': {'$gt': now}}, {'seen': {'$gt': now - 90}}]})
             require(len(active) < 4, 'All four team login slots are occupied', 409)
             require(not any((x.member == member for x in active)), 'This member is already logged in. Log out there or wait 90 seconds.', 409)
+        if not admin:
+            # A new login replaces disconnected sessions for this member.
+            repo.delete_where(Session, {'team_id': {'$eq': team.id}, 'member': {'$eq': member}})
         token = secrets.token_urlsafe(40)
         repo.add(Session(token_hash=digest(token), team_id=team.id if team else None, member=member, admin=admin, seen=now, expires=now + settings().session_hours * 3600))
         audit('admin_login' if admin else 'login', team.id if team else None)
@@ -145,9 +149,11 @@ def create_app(config=None):
         return jsonify(token=token, admin=admin)
 
     @app.post('/api/logout')
-    @auth()
     def logout():
-        repo.delete(g.session)
+        token = request.headers.get('Authorization', '').removeprefix('Bearer ')
+        session = repo.get(Session, digest(token)) if token else None
+        if session:
+            repo.delete(session)
         repo.commit()
         return jsonify(ok=True)
 
@@ -347,6 +353,7 @@ def create_app(config=None):
         t = team_locked(id)
         combined = team_json(t) | b
         validate_team(combined)
+        credentials_changed = bool(b.get('password')) or ('email' in b and b['email'].strip().lower() != t.email) or ('members' in b and b['members'] != t.members)
         for key in ['name', 'email', 'members']:
             if key in b:
                 setattr(t, key, b[key].strip().lower() if key == 'email' else b[key])
@@ -359,7 +366,7 @@ def create_app(config=None):
         if b.get('password'):
             require(isinstance(b['password'], str) and len(b['password']) >= 8, 'Password must be at least 8 characters')
             t.password_hash = generate_password_hash(b['password'])
-        if any((k in b for k in ['members', 'email', 'password'])):
+        if credentials_changed:
             repo.delete_where(Session, {'team_id': {'$eq': id}})
         audit('team_updated', id)
         repo.commit()
