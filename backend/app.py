@@ -392,7 +392,10 @@ def create_app(config=None):
         t = team_locked(id)
         b = body()
         action = b.get('action')
-        require(action in ['reset', 'disqualify', 'revoke', 'qualify', 'unqualify', 'restore'], 'Unknown team action')
+        require(action in ['reset', 'reset_password', 'disqualify', 'revoke', 'qualify', 'unqualify', 'restore'], 'Unknown team action')
+        if action == 'reset_password':
+            leader = t.members[0]
+            t.password_hash = generate_password_hash(initial_password(leader['name'], leader['roll']))
         if action == 'reset':
             require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'), 'Cannot reset a team already in the knockout bracket', 409)
             repo.delete_where(Chamber, {'team_id': {'$eq': id}})
