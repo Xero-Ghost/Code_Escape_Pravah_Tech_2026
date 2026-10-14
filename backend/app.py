@@ -471,11 +471,30 @@ def create_app(config=None):
                 m.status = 'complete'
             advance_bracket()
         if action == 'qualify':
-            in_bracket = repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id')
-            require(not in_bracket, 'A team already placed in the knockout bracket cannot be manually requalified', 409)
             require(t.status != 'qualified', 'This team is already qualified', 409)
+            team_matches = [m for m in repo.find(Match, {}) if id in [m.a, m.b]]
+            if t.status == 'disqualified' and team_matches:
+                prior = [m for m in team_matches if m.status == 'complete' and m.winner != id and m.a is not None]
+                require(prior, 'Could not find the knockout match to replay; remove the team from the round tree first', 409)
+                source = max(prior, key=lambda m: m.round)
+                downstream = [m for m in repo.find(Match, {}) if m.round > source.round]
+                require(not any(m.status == 'live' for m in downstream), 'Finish live later-round matches before re-qualifying this team', 409)
+                for later in downstream:
+                    repo.delete(later)
+                source.status = 'ready'
+                source.winner = None
+                source.started_at = None
+                source.answers = {}
+                source.participant_members = {}
+                source.member_started_at = {}
+                source.team_question_ids = {}
+                source.question_ids = []
+                audit('bracket_requalify', id, f'Reopened match {source.id}; cleared {len(downstream)} downstream matches')
+                advance_bracket()
+            else:
+                require(not team_matches, 'Move this team out of the round tree before qualifying it', 409)
             t.status = 'qualified'
-            t.reason = 'Stage 1 manually cleared'
+            t.reason = 'Re-qualified by organizer' if b.get('requalify') else 'Stage 1 manually cleared'
         if action == 'unqualify':
             in_bracket = repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id')
             require(t.status == 'qualified' and not in_bracket, 'Move the team out of the round tree before returning it to Stage 1', 409)
