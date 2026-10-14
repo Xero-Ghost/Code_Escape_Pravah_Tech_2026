@@ -136,6 +136,18 @@ def create_app(config=None):
             require(type(member) is int and 0 <= member < 4, 'Choose one of your four members')
             s = settings()
             require((team.valid_from if team.valid_from is not None else s.valid_from) <= now < (team.valid_until if team.valid_until is not None else s.valid_until), 'Credentials are not valid at this time', 403)
+            expire_team(team, s, now)
+            timed_out = set(getattr(team, 'timed_out_members', []) or [])
+            require(member not in timed_out, 'Your Stage 1 time has expired', 409)
+            if s.stage == 'stage1' and team.status in ['registered', 'playing']:
+                starts = dict(getattr(team, 'member_started_at', {}) or {})
+                if str(member) not in starts:
+                    starts[str(member)] = now
+                    team.member_started_at = starts
+                    for chamber in repo.find(Chamber, {'team_id': {'$eq': team.id}}):
+                        if chamber.member == member and chamber.submitted_at is None:
+                            chamber.started_at = now
+                team.status = 'playing'
             active = repo.find(Session, {'$and': [{'team_id': {'$eq': team.id}}, {'expires': {'$gt': now}}, {'seen': {'$gt': now - 90}}]})
             require(len(active) < 4, 'All four team login slots are occupied', 409)
             require(not any((x.member == member for x in active)), 'This member is already logged in. Log out there or wait 90 seconds.', 409)
@@ -179,14 +191,22 @@ def create_app(config=None):
             result.update(teams=[team_json(t) for t in teams], questions=[question_json(q, True) for q in repo.find(Question, {})], audit=[{'at': a.at, 'team_id': a.team_id, 'action': a.action, 'detail': a.detail} for a in repo.find(Audit, {}, sort=[('_id', -1)], limit=100)], sessions=[{'team_id': x.team_id, 'member': x.member, 'seen': x.seen} for x in repo.find(Session, {'$and': [{'team_id': {'$ne': None}}, {'seen': {'$gt': now - 90}}, {'expires': {'$gt': now}}]})])
         else:
             team = participant()
+            if s.stage == 'stage1' and team.status in ['registered', 'playing'] and g.session.member is not None:
+                starts = dict(getattr(team, 'member_started_at', {}) or {})
+                starts.setdefault(str(g.session.member), now)
+                team.member_started_at = starts
+                team.status = 'playing'
             expire_team(team, s, now)
+            result['member_timed_out'] = g.session.member in set(getattr(team, 'timed_out_members', []) or [])
             chambers = repo.find(Chamber, {'team_id': {'$eq': team.id}})
+            member_started = (getattr(team, 'member_started_at', {}) or {}).get(str(g.session.member))
+            result['member_deadline'] = member_started + s.total_seconds if member_started else None
             result.update(team=team_json(team), member=g.session.member, chambers=[])
             active = repo.find(Session, {'$and': [{'team_id': {'$eq': team.id}}, {'seen': {'$gt': now - 90}}, {'expires': {'$gt': now}}]})
             result['online_members'] = [x.member for x in active]
             for c in chambers:
                 item = {k: getattr(c, k) for k in ['id', 'slot', 'member', 'started_at', 'submitted_at', 'correct']}
-                item['deadline'] = min(c.started_at + s.chamber_seconds[c.slot], team.started_at + s.total_seconds)
+                item['deadline'] = min(c.started_at + s.chamber_seconds[c.slot], ((getattr(team, 'member_started_at', {}) or {}).get(str(c.member), now) + s.total_seconds))
                 if c.member == g.session.member and team.status == 'playing' and (c.submitted_at is None):
                     item['question'] = question_json(repo.get(Question, c.question_id))
                 result['chambers'].append(item)
@@ -215,13 +235,15 @@ def create_app(config=None):
             raise ArenaError('Your team is eliminated', 409)
         require(s.stage == 'stage1', 'Stage 1 is not open', 409)
         require(team.status in ['registered', 'playing'], 'This team cannot enter Stage 1', 409)
+        require(g.session.member not in set(getattr(team, 'timed_out_members', []) or []), 'Your Stage 1 time has expired', 409)
         require(not repo.one(Chamber, {'$and': [{'team_id': {'$eq': team.id}}, {'$or': [{'slot': {'$eq': slot}}, {'member': {'$eq': g.session.member}}]}]}), 'Chamber occupied, or you already own another chamber', 409)
         questions = list(repo.find(Question, {'kind': {'$eq': KINDS[slot]}}))
         require(questions, 'No question is available for this chamber', 409)
         q = secrets.choice(questions)
         now = time.time()
-        if team.started_at is None:
-            team.started_at = now
+        starts = dict(getattr(team, 'member_started_at', {}) or {})
+        starts.setdefault(str(g.session.member), now)
+        team.member_started_at = starts
         team.status = 'playing'
         repo.add(Chamber(team_id=team.id, slot=slot, member=g.session.member, question_id=q.id, started_at=now))
         audit('chamber_claimed', team.id, f'Member {g.session.member + 1}, chamber {slot + 1}')
@@ -422,6 +444,8 @@ def create_app(config=None):
             t.status = 'registered'
             t.reason = None
             t.started_at = None
+            t.member_started_at = {}
+            t.timed_out_members = []
         if action == 'disqualify':
             require(bool(b.get('reason')), 'A coordinator reason is required')
             t.status = 'disqualified'
@@ -452,6 +476,8 @@ def create_app(config=None):
             t.status = 'playing' if chambers else 'registered'
             t.reason = None
             t.started_at = now if chambers else None
+            t.member_started_at = {}
+            t.timed_out_members = []
             for chamber in chambers:
                 if chamber.submitted_at is None:
                     chamber.started_at = now

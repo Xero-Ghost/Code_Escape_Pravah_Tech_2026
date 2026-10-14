@@ -51,14 +51,37 @@ def validate_question(q):
 
 def expire_team(team, settings, now=None):
     now = now or time.time()
-    if team.status != 'playing':
+    if team.status not in ['registered', 'playing']:
         return
+    starts = getattr(team, 'member_started_at', {}) or {}
+    timed_out = set(getattr(team, 'timed_out_members', []) or [])
     chambers = repo.find(Chamber, {'team_id': {'$eq': team.id}})
-    expired = team.started_at + settings.total_seconds <= now or any((c.submitted_at is None and c.started_at + settings.chamber_seconds[c.slot] <= now for c in chambers))
-    if expired:
+    for member_key, member_start in starts.items():
+        member = int(member_key)
+        if member in timed_out:
+            continue
+        chamber = next((c for c in chambers if c.member == member), None)
+        if chamber and chamber.submitted_at is not None:
+            continue
+        deadline = member_start + settings.total_seconds
+        if chamber:
+            deadline = min(deadline, chamber.started_at + settings.chamber_seconds[chamber.slot])
+        if now >= deadline:
+            timed_out.add(member)
+            if chamber:
+                chamber.correct = False
+                chamber.submitted_at = deadline
+            audit('member_timeout', team.id, f'Member {member + 1}')
+    team.timed_out_members = sorted(timed_out)
+    failed = timed_out | {c.member for c in chambers if c.correct is False}
+    if len(failed) >= 2:
         team.status = 'eliminated'
-        team.reason = 'Stage 1 timer expired'
-        audit('timeout', team.id)
+        team.reason = 'Two team members answered incorrectly or ran out of time'
+    elif team.status == 'registered' and starts:
+        team.status = 'playing'
+    if len(chambers) + len(timed_out - {c.member for c in chambers}) >= 4 and all(c.submitted_at is not None for c in chambers) and sum(c.correct is True for c in chambers) >= 3 and len(failed) < 2:
+        team.status = 'qualified'
+        team.reason = 'Stage 1 completed with at least three correct answers'
 
 def match_json(m):
     return {k: getattr(m, k) for k in ['id', 'round', 'position', 'label', 'a', 'b', 'started_at', 'winner', 'status']} | {'participant_members': getattr(m, 'participant_members', {}) or {}, 'scores': {k: {'score': sum((x['correct'] for x in v.values())), 'time': round(sum((x['elapsed'] for x in v.values())), 2), 'answered': len(v)} for k, v in (m.answers or {}).items()}}

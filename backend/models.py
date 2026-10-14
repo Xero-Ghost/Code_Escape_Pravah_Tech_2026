@@ -23,7 +23,7 @@ class Settings(Record):
 class Team(Record):
     collection = 'team'
     pk = 'id'
-    defaults = {'id': None, 'name': None, 'email': None, 'password_hash': None, 'members': None, 'status': 'registered', 'reason': None, 'started_at': None, 'valid_from': None, 'valid_until': None}
+    defaults = {'id': None, 'name': None, 'email': None, 'password_hash': None, 'members': None, 'status': 'registered', 'reason': None, 'started_at': None, 'member_started_at': {}, 'timed_out_members': [], 'valid_from': None, 'valid_until': None}
 
 class Session(Record):
     collection = 'session'
