@@ -167,6 +167,11 @@ def create_app(config=None):
             settle_match(m, s)
         result = {'admin': g.session.admin, 'settings': settings_json(s), 'server_time': now}
         if g.session.admin:
+            advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
+            known_titles = {q.title for q in repo.find(Question, {})}
+            for question in advanced:
+                if question['title'] not in known_titles:
+                    repo.add(Question(**validate_question(question)))
             teams = repo.find(Team, {}, sort=[('_id', 1)])
             for t in teams:
                 if t.status == 'playing':
@@ -508,6 +513,11 @@ def create_app(config=None):
                     'Played matches cannot be discarded; finish the current bracket first', 409)
             for m in existing:
                 repo.delete(m)
+        advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
+        known_titles = {q.title for q in repo.find(Question, {})}
+        for question in advanced:
+            if question['title'] not in known_titles:
+                repo.add(Question(**validate_question(question)))
         ids = b.get('team_ids')
         qualified = list(repo.find(Team, {'status': {'$eq': 'qualified'}}, field='id'))
         require(isinstance(ids, list) and all((type(x) is int for x in ids)) and (len(ids) >= 2) and (len(set(ids)) == len(ids)) and (set(ids) == set(qualified)), 'Include every qualified team exactly once, in your chosen seed order')
@@ -576,9 +586,9 @@ def create_app(config=None):
         require(match.status == 'ready' and match.started_at is None,
                 'Questions can only be changed before the match starts', 409)
         ids = body().get('question_ids')
-        require(isinstance(ids, list) and len(ids) == 3 and all(type(qid) is int for qid in ids)
-                and len(set(ids)) == 3, 'Choose exactly three different questions')
-        require(all(repo.get(Question, qid) for qid in ids), 'A selected question no longer exists', 409)
+        require(isinstance(ids, list) and len(ids) == 16 and all(type(qid) is int for qid in ids)
+                and len(set(ids)) == 16, 'Choose exactly 16 different advanced questions')
+        require(all((repo.get(Question, qid) and repo.get(Question, qid).title.startswith('Round 2 · ')) for qid in ids), 'Choose only advanced Round 2 questions', 409)
         match.question_ids = ids
         audit('match_questions_updated', detail=f'Match {id}: {ids}')
         repo.commit()
@@ -591,15 +601,16 @@ def create_app(config=None):
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
         require(m.status == 'ready' and m.a is not None and m.b is not None, 'Choose a ready match with two teams', 409)
+        require(len(m.question_ids or []) == 16, 'Set the 16 advanced Round 2 questions before starting')
         selected = body().get('members')
-        require(isinstance(selected, dict), 'Choose one representative for each team')
+        require(isinstance(selected, dict), 'Choose one representative account for each team')
         for team_id in [m.a, m.b]:
-            member = selected.get(str(team_id))
             team = repo.get(Team, team_id)
-            require(team and type(member) is int and 0 <= member < len(team.members),
-                    'Choose one valid member for each team')
+            member = selected.get(str(team_id))
+            require(team and type(member) is int and 0 <= member < len(team.members), 'Choose one valid representative for each team')
         m.participant_members = {str(team_id): selected[str(team_id)] for team_id in [m.a, m.b]}
         m.started_at = time.time()
+        m.member_started_at = {str(team_id): {str(selected[str(team_id)]): m.started_at} for team_id in [m.a, m.b]}
         m.status = 'live'
         s.stage = 'stage2'
         audit('match_started', detail=f'{id}; members={m.participant_members}')
@@ -632,14 +643,14 @@ def create_app(config=None):
         require(g.session.admin or g.session.team_id in [m.a, m.b], 'This match belongs to other teams', 403)
         if not g.session.admin and m.status == 'live':
             selected_member = (getattr(m, 'participant_members', {}) or {}).get(str(g.session.team_id))
-            require(selected_member is None or selected_member == g.session.member,
-                    'This match is assigned to another team member', 403)
+            require(g.session.member == selected_member, 'This match is assigned to another team member', 403)
         settle_match(m, s)
         result = match_json(m)
         if m.status == 'live' and s.stage == 'stage2':
+            member = g.session.member
             entries = (m.answers or {}).get(str(g.session.team_id), {})
             result['questions'] = [question_json(repo.get(Question, q)) for q in m.question_ids if str(q) not in entries]
-            result['deadline'] = m.started_at + s.match_seconds
+            result['deadline'] = ((getattr(m, 'member_started_at', {}) or {}).get(str(g.session.team_id), {}).get(str(member), m.started_at) + s.match_seconds)
         repo.commit()
         return jsonify(result)
 
@@ -652,8 +663,7 @@ def create_app(config=None):
         require(m, 'Match not found', 404)
         require(t.id in [m.a, m.b] and t.status == 'qualified', 'Team cannot answer this match', 403)
         selected_member = (getattr(m, 'participant_members', {}) or {}).get(str(t.id))
-        require(selected_member is not None and selected_member == g.session.member,
-                'Only the team member selected by the organizer can answer this match', 403)
+        require(g.session.member == selected_member, 'Only the selected representative account can answer this match', 403)
         settle_match(m, s)
         if m.status != 'live':
             repo.commit()
@@ -662,11 +672,14 @@ def create_app(config=None):
         b = body()
         qid = b.get('question_id')
         require(qid in m.question_ids, 'Question is not part of this match')
+        started = (getattr(m, 'member_started_at', {}) or {}).get(str(t.id), {}).get(str(g.session.member), m.started_at)
+        require(time.time() < started + s.match_seconds, 'Your individual match timer has expired', 409)
         answers = dict(m.answers or {})
         entries = dict(answers.get(str(t.id), {}))
-        require(str(qid) not in entries, 'Your team has already submitted this answer', 409)
+        require(str(qid) not in entries, 'You have already submitted this answer', 409)
+        require(len(entries) < 16, 'All 16 match questions have been answered', 409)
         q = repo.get(Question, qid)
-        entries[str(qid)] = {'correct': type(b.get('answer')) is type(q.answer) and b.get('answer') == q.answer, 'elapsed': round(time.time() - m.started_at, 3), 'member': g.session.member}
+        entries[str(qid)] = {'correct': type(b.get('answer')) is type(q.answer) and b.get('answer') == q.answer, 'elapsed': round(time.time() - started, 3), 'member': g.session.member}
         answers[str(t.id)] = entries
         m.answers = answers
         settle_match(m, s)

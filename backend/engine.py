@@ -64,9 +64,9 @@ def match_json(m):
     return {k: getattr(m, k) for k in ['id', 'round', 'position', 'label', 'a', 'b', 'started_at', 'winner', 'status']} | {'participant_members': getattr(m, 'participant_members', {}) or {}, 'scores': {k: {'score': sum((x['correct'] for x in v.values())), 'time': round(sum((x['elapsed'] for x in v.values())), 2), 'answered': len(v)} for k, v in (m.answers or {}).items()}}
 
 def questions_for_match():
-    ids = list(repo.find(Question, {}, field='id'))
-    require(len(ids) >= 3, 'Add at least three questions first')
-    return random.SystemRandom().sample(ids, 3)
+    ids = [q.id for q in repo.find(Question, {}) if q.title.startswith('Round 2 · ')]
+    require(len(ids) >= 16, 'Round 2 advanced question set is not ready')
+    return random.SystemRandom().sample(ids, 16)
 
 def make_round(team_ids, round_no, label=None):
     count = len(team_ids)
@@ -97,15 +97,23 @@ def advance_bracket():
 def settle_match(m, settings):
     if m.status != 'live':
         return
-    expired = time.time() >= m.started_at + settings.match_seconds
     answers = m.answers or {}
-    if not expired and any((len(answers.get(str(t), {})) < 3 for t in [m.a, m.b])):
+    starts = getattr(m, 'member_started_at', {}) or {}
+    complete = True
+    for team_id in [m.a, m.b]:
+        member = (getattr(m, 'participant_members', {}) or {}).get(str(team_id))
+        started = starts.get(str(team_id), {}).get(str(member))
+        entries = answers.get(str(team_id), {})
+        if member is None or started is None or (len(entries) < 16 and time.time() < started + settings.match_seconds):
+            complete = False
+    if not complete:
         return
     repo.lock()
     stats = []
-    for t in [m.a, m.b]:
-        entries = answers.get(str(t), {})
-        stats.append((sum((x['correct'] for x in entries.values())), sum((x['elapsed'] for x in entries.values())) + (3 - len(entries)) * settings.match_seconds))
+    for team_id in [m.a, m.b]:
+        entries = answers.get(str(team_id), {})
+        stats.append((sum(bool(x['correct']) for x in entries.values()),
+                      max((x['elapsed'] for x in entries.values()), default=0) + max(0, 16-len(entries))*settings.match_seconds))
     if stats[0] == stats[1]:
         m.status = 'tie'
         audit('exact_tie', detail=f'Match {m.id}: coordinator decision required')
