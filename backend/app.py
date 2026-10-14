@@ -377,7 +377,20 @@ def create_app(config=None):
     def delete_team(id):
         s = settings(True)
         t = team_locked(id)
-        require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'), 'Team is in the bracket and cannot be deleted', 409)
+        # Remove only this team's references; keep other teams and match records.
+        affected = repo.find(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}, {'winner': {'$eq': id}}]})
+        for match in affected:
+            if match.a == id:
+                match.a = None
+            if match.b == id:
+                match.b = None
+            match.answers = {key: value for key, value in (match.answers or {}).items() if str(key) != str(id)}
+            match.participant_members = {key: value for key, value in (match.participant_members or {}).items() if str(key) != str(id)}
+            if match.winner == id or match.status != 'complete':
+                match.winner = None
+                match.status = 'ready'
+                match.started_at = None
+            audit('match_team_removed', id, f'Match {match.id}; vacant slot requires coordinator placement')
         repo.delete_where(Session, {'team_id': {'$eq': id}})
         repo.delete_where(Chamber, {'team_id': {'$eq': id}})
         repo.delete(t)
@@ -575,7 +588,7 @@ def create_app(config=None):
         s = settings(True)
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
-        require(m.status == 'ready' and m.b is not None, 'Choose a ready match with two teams', 409)
+        require(m.status == 'ready' and m.a is not None and m.b is not None, 'Choose a ready match with two teams', 409)
         selected = body().get('members')
         require(isinstance(selected, dict), 'Choose one representative for each team')
         for team_id in [m.a, m.b]:
