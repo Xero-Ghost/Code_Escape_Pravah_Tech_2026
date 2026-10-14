@@ -9,7 +9,7 @@ from mongo_store import password_hash as generate_password_hash
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from mongo_store import repo, MongoStore, install_transactions
 from models import Settings, Team, Session, Question, Chamber, Match, Audit, LoginAttempt
-from engine import require, ArenaError, KINDS, audit, question_json, validate_question, expire_team, match_json, questions_for_match, make_round, settle_match, advance_bracket
+from engine import require, ArenaError, KINDS, ROUND2_QUESTION_COUNT, audit, question_json, validate_question, expire_team, match_json, questions_for_match, make_round, settle_match, advance_bracket
 from importer import parse_workbook, initial_password
 load_dotenv(Path(__file__).with_name('.env'))
 
@@ -177,6 +177,9 @@ def create_app(config=None):
         g.session.seen = now
         for m in repo.find(Match, {'status': {'$eq': 'live'}}):
             settle_match(m, s)
+        # Recover bracket progression if a completed match was saved before its
+        # next round could be materialized (for example, during a brief DB error).
+        advance_bracket()
         result = {'admin': g.session.admin, 'settings': settings_json(s), 'server_time': now}
         if g.session.admin:
             advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
@@ -185,6 +188,8 @@ def create_app(config=None):
                 existing = known_questions.get(question['title'])
                 if existing:
                     existing.year_level = question['year_level']
+                    existing.difficulty = question.get('difficulty', '')
+                    existing.topic_area = question.get('topic_area', '')
                 else:
                     repo.add(Question(**validate_question(question)))
             teams = repo.find(Team, {}, sort=[('_id', 1)])
@@ -215,7 +220,7 @@ def create_app(config=None):
                 result['chambers'].append(item)
         all_matches = repo.find(Match, {}, sort=[('round', 1), ('position', 1)])
         if g.session.admin:
-            result['matches'] = [dict(match_json(m), question_ids=m.question_ids) for m in all_matches]
+            result['matches'] = [dict(match_json(m), question_ids=m.question_ids, team_question_ids=getattr(m, 'team_question_ids', {}) or {}) for m in all_matches]
             result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {})}
         else:
             result['matches'] = [match_json(m) for m in all_matches if team.id in [m.a, m.b]]
@@ -240,7 +245,7 @@ def create_app(config=None):
         require(team.status in ['registered', 'playing'], 'This team cannot enter Stage 1', 409)
         require(g.session.member not in set(getattr(team, 'timed_out_members', []) or []), 'Your Stage 1 time has expired', 409)
         require(not repo.one(Chamber, {'$and': [{'team_id': {'$eq': team.id}}, {'$or': [{'slot': {'$eq': slot}}, {'member': {'$eq': g.session.member}}]}]}), 'Chamber occupied, or you already own another chamber', 409)
-        questions = list(repo.find(Question, {'kind': {'$eq': KINDS[slot]}}))
+        questions = [q for q in repo.find(Question, {'kind': {'$eq': KINDS[slot]}}) if not q.title.startswith('Round 2 · ')]
         require(questions, 'No question is available for this chamber', 409)
         q = secrets.choice(questions)
         now = time.time()
@@ -504,7 +509,7 @@ def create_app(config=None):
         return jsonify(added=len(validated))
 
     def question_unused(id):
-        require(not repo.one(Chamber, {'question_id': {'$eq': id}}, field='id') and (not any((id in m.question_ids for m in repo.find(Match, {})))), 'Question is assigned to a chamber or match; it cannot be changed', 409)
+        require(not repo.one(Chamber, {'question_id': {'$eq': id}}, field='id') and (not any((id in (m.question_ids or []) for m in repo.find(Match, {})))), 'Question is assigned to a chamber or match; it cannot be changed', 409)
 
     @app.patch('/api/admin/questions/<int:id>')
     @auth(True)
@@ -543,9 +548,14 @@ def create_app(config=None):
             for m in existing:
                 repo.delete(m)
         advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
-        known_titles = {q.title for q in repo.find(Question, {})}
+        known_questions = {q.title: q for q in repo.find(Question, {})}
         for question in advanced:
-            if question['title'] not in known_titles:
+            existing_question = known_questions.get(question['title'])
+            if existing_question:
+                existing_question.year_level = question.get('year_level', '')
+                existing_question.difficulty = question.get('difficulty', '')
+                existing_question.topic_area = question.get('topic_area', '')
+            else:
                 repo.add(Question(**validate_question(question)))
         ids = b.get('team_ids')
         qualified = list(repo.find(Team, {'status': {'$eq': 'qualified'}}, field='id'))
@@ -614,12 +624,26 @@ def create_app(config=None):
         require(match, 'Match not found', 404)
         require(match.status == 'ready' and match.started_at is None,
                 'Questions can only be changed before the match starts', 409)
-        ids = body().get('question_ids')
-        require(isinstance(ids, list) and len(ids) == 16 and all(type(qid) is int for qid in ids)
-                and len(set(ids)) == 16, 'Choose exactly 16 different advanced questions')
-        require(all((repo.get(Question, qid) and repo.get(Question, qid).title.startswith('Round 2 · ')) for qid in ids), 'Choose only advanced Round 2 questions', 409)
-        match.question_ids = ids
-        audit('match_questions_updated', detail=f'Match {id}: {ids}')
+        teams = body().get('team_question_ids')
+        require(isinstance(teams, dict), 'Choose 16 questions separately for each team')
+        team_ids = [str(match.a), str(match.b)]
+        require(all(isinstance(teams.get(team_id), list) and len(teams[team_id]) == ROUND2_QUESTION_COUNT
+                    and all(type(qid) is int for qid in teams[team_id])
+                    and len(set(teams[team_id])) == ROUND2_QUESTION_COUNT for team_id in team_ids),
+                f'Choose exactly {ROUND2_QUESTION_COUNT} different questions for each team')
+        first, second = (set(teams[t]) for t in team_ids)
+        require(not first.intersection(second), 'Each team must receive a different question set', 409)
+        for team_id in team_ids:
+            qs = [repo.get(Question, qid) for qid in teams[team_id]]
+            require(all(q and q.title.startswith('Round 2 · ') for q in qs), 'Choose only Round 2 questions', 409)
+            require(sum(q.difficulty == 'Easy' for q in qs) >= 4
+                    and sum(q.topic_area == 'Current Tech' for q in qs) >= 4
+                    and sum(q.difficulty == 'Hard' for q in qs) >= 4
+                    and all(sum(q.kind == kind for q in qs) >= 4 for kind in ['case', 'arrange', 'error']),
+                    'Each team needs at least 4 Easy, Current Tech, Hard, and each non-quiz format')
+        match.team_question_ids = {team_id: teams[team_id] for team_id in team_ids}
+        match.question_ids = teams[team_ids[0]] + teams[team_ids[1]]
+        audit('match_questions_updated', detail=f'Match {id}: 16 distinct questions per team')
         repo.commit()
         return jsonify(ok=True)
 
@@ -630,7 +654,30 @@ def create_app(config=None):
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
         require(m.status == 'ready' and m.a is not None and m.b is not None, 'Choose a ready match with two teams', 409)
-        require(len(m.question_ids or []) == 16, 'Set the 16 advanced Round 2 questions before starting')
+        assignments = getattr(m, 'team_question_ids', {}) or {}
+        team_keys = [str(m.a), str(m.b)]
+        valid_assignments = all(isinstance(assignments.get(team_id), list)
+            and len(assignments[team_id]) == ROUND2_QUESTION_COUNT
+            and len(set(assignments[team_id])) == ROUND2_QUESTION_COUNT for team_id in team_keys)
+        valid_assignments = valid_assignments and not set(assignments.get(team_keys[0], [])).intersection(assignments.get(team_keys[1], []))
+        if not valid_assignments:
+            first = questions_for_match()
+            second = questions_for_match(excluded_ids=first)
+            assignments = {team_keys[0]: first, team_keys[1]: second}
+        for team_id in team_keys:
+            qs = [repo.get(Question, qid) for qid in assignments[team_id]]
+            valid_mix = (all(q and q.title.startswith('Round 2 · ') for q in qs)
+                and sum(q.difficulty == 'Easy' for q in qs) >= 4
+                and sum(q.topic_area == 'Current Tech' for q in qs) >= 4
+                and sum(q.difficulty == 'Hard' for q in qs) >= 4
+                and all(sum(q.kind == kind for q in qs) >= 4 for kind in ['case', 'arrange', 'error']))
+            if not valid_mix:
+                first = questions_for_match()
+                second = questions_for_match(excluded_ids=first)
+                assignments = {team_keys[0]: first, team_keys[1]: second}
+                break
+        m.team_question_ids = assignments
+        m.question_ids = assignments[team_keys[0]] + assignments[team_keys[1]]
         selected = body().get('members')
         require(isinstance(selected, dict), 'Choose one representative account for each team')
         for team_id in [m.a, m.b]:
@@ -678,7 +725,8 @@ def create_app(config=None):
         if m.status == 'live' and s.stage == 'stage2':
             member = g.session.member
             entries = (m.answers or {}).get(str(g.session.team_id), {})
-            result['questions'] = [question_json(repo.get(Question, q)) for q in m.question_ids if str(q) not in entries]
+            assigned = (getattr(m, 'team_question_ids', {}) or {}).get(str(g.session.team_id), [])
+            result['questions'] = [question_json(repo.get(Question, q)) for q in assigned if str(q) not in entries]
             result['deadline'] = ((getattr(m, 'member_started_at', {}) or {}).get(str(g.session.team_id), {}).get(str(member), m.started_at) + s.match_seconds)
         repo.commit()
         return jsonify(result)
@@ -700,13 +748,14 @@ def create_app(config=None):
         require(s.stage == 'stage2', 'Stage 2 is not open', 409)
         b = body()
         qid = b.get('question_id')
-        require(qid in m.question_ids, 'Question is not part of this match')
+        assigned = (getattr(m, 'team_question_ids', {}) or {}).get(str(t.id), [])
+        require(qid in assigned, 'Question is not assigned to your team in this match')
         started = (getattr(m, 'member_started_at', {}) or {}).get(str(t.id), {}).get(str(g.session.member), m.started_at)
         require(time.time() < started + s.match_seconds, 'Your individual match timer has expired', 409)
         answers = dict(m.answers or {})
         entries = dict(answers.get(str(t.id), {}))
         require(str(qid) not in entries, 'You have already submitted this answer', 409)
-        require(len(entries) < 16, 'All 16 match questions have been answered', 409)
+        require(len(entries) < ROUND2_QUESTION_COUNT, f'All {ROUND2_QUESTION_COUNT} match questions have been answered', 409)
         q = repo.get(Question, qid)
         entries[str(qid)] = {'correct': type(b.get('answer')) is type(q.answer) and b.get('answer') == q.answer, 'elapsed': round(time.time() - started, 3), 'member': g.session.member}
         answers[str(t.id)] = entries
@@ -725,7 +774,7 @@ def create_app(config=None):
         matches = [m for m in repo.find(Match, {}) if id in [m.a, m.b]]
         return jsonify(chambers=[{k: getattr(c, k) for k in
             ['slot', 'member', 'question_id', 'submitted_at', 'correct']} for c in chambers],
-            matches=[dict(match_json(m), question_ids=m.question_ids,
+            matches=[dict(match_json(m), question_ids=(getattr(m, 'team_question_ids', {}) or {}).get(str(id), []),
                 answered=list((m.answers or {}).get(str(id), {}))) for m in matches])
 
     @app.post('/api/admin/teams/<int:id>/apply-practice')
@@ -796,7 +845,7 @@ def create_app(config=None):
             answers = dict(m.answers or {})
             entries = dict(answers.get(str(id), {}))
             for row, q, correct in graded:
-                require(q.id in m.question_ids, 'Question is not assigned to this match', 409)
+                require(q.id in (getattr(m, 'team_question_ids', {}) or {}).get(str(id), []), 'Question is not assigned to this team in this match', 409)
                 require(str(q.id) not in entries, 'This question already has a real answer; no results were changed', 409)
                 require(row['elapsed'] <= s.match_seconds, 'Practice exceeded the match timer', 409)
                 entries[str(q.id)] = dict(correct=correct, elapsed=round(row['elapsed'], 3), member=row['member'])

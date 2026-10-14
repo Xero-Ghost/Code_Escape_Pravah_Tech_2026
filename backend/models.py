@@ -33,7 +33,7 @@ class Session(Record):
 class Question(Record):
     collection = 'question'
     pk = 'id'
-    defaults = {'id': None, 'kind': None, 'title': None, 'prompt': None, 'choices': None, 'answer': None, 'explanation': '', 'source': '', 'hint': '', 'year_level': ''}
+    defaults = {'id': None, 'kind': None, 'title': None, 'prompt': None, 'choices': None, 'answer': None, 'explanation': '', 'source': '', 'hint': '', 'year_level': '', 'difficulty': '', 'topic_area': ''}
 
 class Chamber(Record):
     collection = 'chamber'
@@ -43,7 +43,7 @@ class Chamber(Record):
 class Match(Record):
     collection = 'match'
     pk = 'id'
-    defaults = {'id': None, 'round': None, 'position': None, 'label': 'Knockout', 'a': None, 'b': None, 'question_ids': None, 'answers': {}, 'participant_members': {}, 'member_started_at': {}, 'started_at': None, 'winner': None, 'status': 'ready'}
+    defaults = {'id': None, 'round': None, 'position': None, 'label': 'Knockout', 'a': None, 'b': None, 'question_ids': None, 'team_question_ids': {}, 'answers': {}, 'participant_members': {}, 'member_started_at': {}, 'started_at': None, 'winner': None, 'status': 'ready'}
 
 class Audit(Record):
     collection = 'audit'

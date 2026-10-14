@@ -7,6 +7,7 @@
 /* Warm cream identity. Status colors are semantic, never the overall theme. */
 :root{color:#40352d;background:#f7f2e9;--accent:#a74f32;--highlight:#e9c2a1;--muted:#85776a;--line:#e7dccd;--paper:#fffdf8;--dark:#46362a}
 body{background:#f7f2e9}aside,header,.panel,.stat,.chamber,.member-strip,.modal{background:#fffdf8}
+.team-question-set{border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0;background:#fffdf9}.team-question-set summary{cursor:pointer;font-weight:700;margin-bottom:14px;color:var(--accent)}
 button.primary{background:#a74f32;color:#fffaf4}button.secondary{background:#fffdf8;border-color:#ded0be;color:#655244}
 button:focus-visible,a:focus-visible{outline-color:#bd7959}input:focus,textarea:focus,select:focus{border-color:#bd7959;box-shadow:0 0 0 3px #bd795920}
 nav button.active,.filter-tabs button.selected{background:#f1e2d0;color:#8d492e}nav button{color:#7b6b5a}
@@ -147,3 +148,4 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .question-labels{display:flex;align-items:center;gap:10px}
 .year-level-badge{display:inline-flex;align-items:center;border:1px solid #edaaa5;background:#fff1f0;color:#a51d17;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;letter-spacing:.2px}
 .admin-year-label{display:block;margin-top:4px;color:#7c382f;font-size:10px;font-weight:700}
+.question-tag-badge{display:inline-flex;align-items:center;border:1px solid #edc9a3;background:#fff7eb;color:#82501f;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;letter-spacing:.2px}

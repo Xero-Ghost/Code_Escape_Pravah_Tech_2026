@@ -9,6 +9,7 @@ from models import Settings, Team, Chamber, Question, Match, Audit
 QUESTION_ENRICHMENTS = json.loads(Path(__file__).with_name('question_enrichments.json').read_text())
 
 KINDS = ['case', 'arrange', 'error', 'quiz']
+ROUND2_QUESTION_COUNT = 16
 
 def require(condition, message, status=400):
     if not condition:
@@ -25,7 +26,7 @@ def audit(action, team_id=None, detail=''):
 def question_json(q, admin=False):
     fingerprint = hashlib.sha256(json.dumps({k: getattr(q, k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source']}, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
     enrichment = QUESTION_ENRICHMENTS.get(fingerprint, {})
-    result = dict(id=q.id, kind=q.kind, title=q.title, prompt=enrichment.get('prompt', q.prompt), choices=q.choices, hint=getattr(q, 'hint', '') or enrichment.get('hint', ''), year_level=getattr(q, 'year_level', '') or '')
+    result = dict(id=q.id, kind=q.kind, title=q.title, prompt=enrichment.get('prompt', q.prompt), choices=q.choices, hint=getattr(q, 'hint', '') or enrichment.get('hint', ''), year_level=getattr(q, 'year_level', '') or '', difficulty=getattr(q, 'difficulty', '') or '', topic_area=getattr(q, 'topic_area', '') or '')
     if admin:
         result.update(answer=q.answer, explanation=q.explanation, source=q.source)
     return result
@@ -49,7 +50,11 @@ def validate_question(q):
         require(type(a) is int and 0 <= a < len(c), 'Answer must be a zero-based choice index')
     year_level = q.get('year_level', '')
     require(year_level in ['', '1st Year', '2nd Year'], 'year_level must be 1st Year or 2nd Year')
-    return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source', 'hint']} | {'year_level': year_level}
+    difficulty = q.get('difficulty', '')
+    require(difficulty in ['', 'Easy', 'Medium', 'Hard', 'Advanced'], 'difficulty must be Easy, Medium, Hard or Advanced')
+    topic_area = q.get('topic_area', '')
+    require(topic_area in ['', 'Current Tech', 'Core CS'], 'topic_area must be Current Tech or Core CS')
+    return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source', 'hint']} | {'year_level': year_level, 'difficulty': difficulty, 'topic_area': topic_area}
 
 def expire_team(team, settings, now=None):
     now = now or time.time()
@@ -88,10 +93,27 @@ def expire_team(team, settings, now=None):
 def match_json(m):
     return {k: getattr(m, k) for k in ['id', 'round', 'position', 'label', 'a', 'b', 'started_at', 'winner', 'status']} | {'participant_members': getattr(m, 'participant_members', {}) or {}, 'scores': {k: {'score': sum((x['correct'] for x in v.values())), 'time': round(sum((x['elapsed'] for x in v.values())), 2), 'answered': len(v)} for k, v in (m.answers or {}).items()}}
 
-def questions_for_match():
-    ids = [q.id for q in repo.find(Question, {}) if q.title.startswith('Round 2 · ')]
-    require(len(ids) >= 16, 'Round 2 advanced question set is not ready')
-    return random.SystemRandom().sample(ids, 16)
+def questions_for_match(excluded_ids=None):
+    excluded_ids = set(excluded_ids or [])
+    questions = [q for q in repo.find(Question, {}) if q.title.startswith('Round 2 · ') and q.id not in excluded_ids]
+    ids = [q.id for q in questions]
+    require(len(ids) >= ROUND2_QUESTION_COUNT, 'Not enough unused Round 2 questions for a separate team set')
+    rng = random.SystemRandom()
+    require(all(sum(q.kind == kind for q in questions) >= 4 for kind in ['case', 'arrange', 'error']),
+            'Round 2 bank needs at least four questions per non-quiz format')
+    for _ in range(2000):
+        selected = []
+        for kind in ['case', 'arrange', 'error']:
+            candidates = [q.id for q in questions if q.kind == kind and q.id not in selected]
+            selected.extend(rng.sample(candidates, 4))
+        remaining_quiz = [q.id for q in questions if q.kind == 'quiz' and q.id not in selected]
+        selected.extend(rng.sample(remaining_quiz, ROUND2_QUESTION_COUNT - len(selected)))
+        chosen = [q for q in questions if q.id in selected]
+        if (sum(q.difficulty == 'Easy' for q in chosen) >= 4
+                and sum(q.difficulty == 'Hard' for q in chosen) >= 4
+                and sum(q.topic_area == 'Current Tech' for q in chosen) >= 4):
+            return selected
+    require(False, 'Round 2 bank cannot form a balanced, distinct 16-question set for this team')
 
 def make_round(team_ids, round_no, label=None):
     count = len(team_ids)
@@ -129,7 +151,7 @@ def settle_match(m, settings):
         member = (getattr(m, 'participant_members', {}) or {}).get(str(team_id))
         started = starts.get(str(team_id), {}).get(str(member))
         entries = answers.get(str(team_id), {})
-        if member is None or started is None or (len(entries) < 16 and time.time() < started + settings.match_seconds):
+        if member is None or started is None or (len(entries) < ROUND2_QUESTION_COUNT and time.time() < started + settings.match_seconds):
             complete = False
     if not complete:
         return
@@ -138,7 +160,7 @@ def settle_match(m, settings):
     for team_id in [m.a, m.b]:
         entries = answers.get(str(team_id), {})
         stats.append((sum(bool(x['correct']) for x in entries.values()),
-                      max((x['elapsed'] for x in entries.values()), default=0) + max(0, 16-len(entries))*settings.match_seconds))
+                      max((x['elapsed'] for x in entries.values()), default=0) + max(0, ROUND2_QUESTION_COUNT-len(entries))*settings.match_seconds))
     if stats[0] == stats[1]:
         m.status = 'tie'
         audit('exact_tie', detail=f'Match {m.id}: coordinator decision required')
