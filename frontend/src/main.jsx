@@ -223,7 +223,7 @@ function AdminTestPreview({team,teams,questions,settings,now,api,refresh}){
  useEffect(()=>{let active=true;setLoading(true);setAssignments(null);setConfirm(false);setError('');api(`/admin/teams/${teamId}/test-preview`).then(value=>{if(active){setAssignments(value);setMatchId(value.matches[0]?.id??'');setLoading(false)}}).catch(e=>{if(active){setError(e.message);setLoading(false)}});return()=>{active=false}},[teamId,revision,api]);
  const assignment=assignments?.chambers.find(c=>c.slot===slot);
  const currentMatch=assignments?.matches.find(m=>m.id===Number(matchId));
- const options=mode==='stage1'?questions.filter(q=>!q.title.startsWith('Round 2 · ')&&q.kind===kinds[slot]&&(!assignment||q.id===assignment.question_id)):questions.filter(q=>currentMatch?.question_ids.includes(q.id));
+ const options=mode==='stage1'?questions.filter(q=>!q.title.startsWith('Round 2 · ')&&q.kind===kinds[slot]&&(!assignment||q.id===assignment.question_id)):(currentMatch?.question_ids||[]).map(id=>questions.find(q=>q.id===id)).filter(Boolean);
  const context=`${teamId}:${mode}:${mode==='stage1'?slot:matchId}`;
  const q=options.find(q=>q.id===selections[context])||options[0];
  const key=`${context}:${q?.id}:${member}`;

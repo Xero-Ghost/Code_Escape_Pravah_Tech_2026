@@ -681,6 +681,9 @@ def create_app(config=None):
                 second = questions_for_match(excluded_ids=first)
                 assignments = {team_keys[0]: first, team_keys[1]: second}
                 break
+        # Persist one independent shuffle per team when the match starts.
+        assignments = {team_id: secrets.SystemRandom().sample(assignments[team_id], len(assignments[team_id]))
+                       for team_id in team_keys}
         m.team_question_ids = assignments
         m.question_ids = assignments[team_keys[0]] + assignments[team_keys[1]]
         selected = body().get('members')
