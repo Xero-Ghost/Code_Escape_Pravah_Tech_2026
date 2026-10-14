@@ -76,6 +76,26 @@ class ArenaTests(unittest.TestCase):
                 self.assertEqual(completed.submitted_at,2)
                 self.assertTrue(completed.correct)
 
+    def test_requalify_disqualified_bye_team_without_match_replay(self):
+        team=NS(id=1,status='disqualified',reason='Tab switching')
+        bye=NS(id=1,a=1,b=None,round=1,status='complete',winner=1)
+        repo=NS(find=lambda *a,**k:[bye],commit=lambda:None)
+        self.route('team_action',{'action':'qualify'},{},dict(repo=repo,
+            team_locked=lambda _:team,settings=lambda *a: NS(),Match='match',
+            audit=lambda *a,**k:None,advance_bracket=lambda:None))(1)
+        self.assertEqual(team.status,'qualified')
+        self.assertEqual(team.reason,'Re-qualified by organizer')
+
+    def test_reset_bracket_clears_all_matches_after_confirmation(self):
+        matches=[NS(id=1),NS(id=2)]
+        deleted=[]
+        repo=NS(find=lambda *a,**k:matches,delete=lambda m:deleted.append(m),
+                commit=lambda:None)
+        result=self.route('reset_bracket',{'confirm':True},{},dict(repo=repo,
+            settings=lambda *a: NS(),Match='match',audit=lambda *a,**k:None))( )
+        self.assertEqual(result,{'ok':True,'removed_matches':2})
+        self.assertEqual(deleted,matches)
+
     def test_question_hints_and_paragraphs(self):
         import hashlib
         tree=ast.parse((ROOT/'backend/engine.py').read_text())

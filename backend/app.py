@@ -457,6 +457,7 @@ def create_app(config=None):
         t = team_locked(id)
         b = body()
         action = b.get('action')
+        was_disqualified = t.status == 'disqualified'
         require(action in ['reset', 'reset_password', 'disqualify', 'revoke', 'qualify', 'unqualify', 'restore'], 'Unknown team action')
         if action == 'reset_password':
             leader = t.members[0]
@@ -482,26 +483,32 @@ def create_app(config=None):
             team_matches = [m for m in repo.find(Match, {}) if id in [m.a, m.b]]
             if t.status == 'disqualified' and team_matches:
                 prior = [m for m in team_matches if m.status == 'complete' and m.winner != id and m.a is not None]
-                require(prior, 'Could not find the knockout match to replay; remove the team from the round tree first', 409)
-                source = max(prior, key=lambda m: m.round)
-                downstream = [m for m in repo.find(Match, {}) if m.round > source.round]
-                require(not any(m.status == 'live' for m in downstream), 'Finish live later-round matches before re-qualifying this team', 409)
-                for later in downstream:
-                    repo.delete(later)
-                source.status = 'ready'
-                source.winner = None
-                source.started_at = None
-                source.answers = {}
-                source.participant_members = {}
-                source.member_started_at = {}
-                source.team_question_ids = {}
-                source.question_ids = []
-                audit('bracket_requalify', id, f'Reopened match {source.id}; cleared {len(downstream)} downstream matches')
-                advance_bracket()
+                if prior:
+                    source = max(prior, key=lambda m: m.round)
+                    downstream = [m for m in repo.find(Match, {}) if m.round > source.round]
+                    require(not any(m.status == 'live' for m in downstream), 'Finish live later-round matches before re-qualifying this team', 409)
+                    for later in downstream:
+                        repo.delete(later)
+                    source.status = 'ready'
+                    source.winner = None
+                    source.started_at = None
+                    source.answers = {}
+                    source.participant_members = {}
+                    source.member_started_at = {}
+                    source.team_question_ids = {}
+                    source.question_ids = []
+                    audit('bracket_requalify', id, f'Reopened match {source.id}; cleared {len(downstream)} downstream matches')
+                    advance_bracket()
+                else:
+                    # A team that advanced on a BYE has no losing match to replay.
+                    # Reinstate its existing bracket slot instead of blocking requalification.
+                    bye = [m for m in team_matches if m.status == 'complete' and m.winner == id and m.b is None]
+                    require(bye, 'This team has no knockout match to replay. Reset Sudden Death rounds to remove it from the bracket.', 409)
+                    audit('bracket_requalify_bye', id, 'Reinstated in its existing BYE bracket slot')
             else:
                 require(not team_matches, 'Move this team out of the round tree before qualifying it', 409)
             t.status = 'qualified'
-            t.reason = 'Re-qualified by organizer' if b.get('requalify') else 'Stage 1 manually cleared'
+            t.reason = 'Re-qualified by organizer' if was_disqualified else 'Stage 1 manually cleared'
         if action == 'unqualify':
             in_bracket = repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id')
             require(t.status == 'qualified' and not in_bracket, 'Move the team out of the round tree before returning it to Stage 1', 409)
@@ -606,6 +613,20 @@ def create_app(config=None):
         audit('bracket_reseeded' if existing else 'bracket_created', detail=ids)
         repo.commit()
         return jsonify(ok=True)
+
+    @app.post('/api/admin/bracket/reset')
+    @auth(True)
+    def reset_bracket():
+        settings(True)
+        b = body()
+        matches = repo.find(Match, {})
+        require(matches, 'There are no Sudden Death rounds to reset', 409)
+        require(b.get('confirm') is True, 'Confirm that all Sudden Death rounds and results should be cleared')
+        for match in matches:
+            repo.delete(match)
+        audit('bracket_reset', detail=f'Cleared {len(matches)} Sudden Death matches')
+        repo.commit()
+        return jsonify(ok=True, removed_matches=len(matches))
 
     @app.post('/api/admin/teams/<int:id>/pass-member')
     @auth(True)
