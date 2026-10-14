@@ -176,14 +176,22 @@ class MongoStore:
         self.database.control.update_one({'_id':'event'}, {'$setOnInsert':{'revision':0}}, upsert=True)
         self.database.settings.update_one({'_id':1}, {'$setOnInsert':Settings().document()}, upsert=True)
 
+    def login_bucket(self, key):
+        # Separate failed-password counters from the legacy all-request counter.
+        return f'failed-login:{key}:{int(time.time() // 300)}'
+
     def rate_limit(self, key):
-        now = time.time()
-        bucket = int(now // 300)
-        row = self.database.login_attempt.find_one_and_update(
-            {'_id':f'{key}:{bucket}'}, {'$inc':{'count':1}, '$setOnInsert':{
-                'purge_at':datetime.fromtimestamp((bucket+2)*300, timezone.utc)}},
-            upsert=True, return_document=ReturnDocument.AFTER)
-        return row['count'] <= 15
+        row = self.database.login_attempt.find_one({'_id': self.login_bucket(key)})
+        return not row or row.get('count', 0) < 15
+
+    def record_login_failure(self, key):
+        bucket = int(time.time() // 300)
+        self.database.login_attempt.update_one(
+            {'_id': self.login_bucket(key)}, {'$inc': {'count': 1}, '$setOnInsert': {
+                'purge_at': datetime.fromtimestamp((bucket + 2) * 300, timezone.utc)}}, upsert=True)
+
+    def reset_login_failures(self, key):
+        self.database.login_attempt.delete_one({'_id': self.login_bucket(key)})
 
     def run(self, callback, lock=False, arena_error=None):
         self.ping_if_missing()
@@ -239,14 +247,22 @@ def install_transactions(app, store, arena_error):
                     body = request.get_json(silent=True) or {}
                     if not isinstance(body, dict):
                         raise arena_error('A JSON object is required')
-                    identity = 'admin' if body.get('admin') is True else str(body.get('email','')).strip().lower()
+                    identity = 'admin' if body.get('admin') is True else ''.join(str(body.get('email','')).split()).casefold()
                     key = hashlib.sha256((identity+':'+str(request.remote_addr)).encode()).hexdigest()
                     if not store.rate_limit(key):
-                        raise arena_error('Too many login attempts. Try again in five minutes.',429)
+                        raise arena_error(f'Too many incorrect passwords. Try again in {300 - int(time.time()) % 300} seconds.', 429)
                 if request.endpoint == 'import_excel':
                     upload = request.files.get('file')
                     g.import_bytes = upload.read() if upload else b''
-                return store.run(lambda: fn(*args, **kwargs),
-                    lock=request.method not in ('GET','HEAD','OPTIONS'), arena_error=arena_error)
+                try:
+                    result = store.run(lambda: fn(*args, **kwargs),
+                        lock=request.method not in ('GET','HEAD','OPTIONS'), arena_error=arena_error)
+                except arena_error as error:
+                    if request.endpoint == 'login' and error.status == 401:
+                        store.record_login_failure(key)
+                    raise
+                if request.endpoint == 'login':
+                    store.reset_login_failures(key)
+                return result
             return wrapped
         app.view_functions[endpoint] = wrap(view)
