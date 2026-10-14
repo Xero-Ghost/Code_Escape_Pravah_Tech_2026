@@ -146,3 +146,4 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .round2-question>button.primary,.round2-question .submit-confirm button.primary{background:var(--round2-red)}
 .question-labels{display:flex;align-items:center;gap:10px}
 .year-level-badge{display:inline-flex;align-items:center;border:1px solid #edaaa5;background:#fff1f0;color:#a51d17;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;letter-spacing:.2px}
+.admin-year-label{display:block;margin-top:4px;color:#7c382f;font-size:10px;font-weight:700}
