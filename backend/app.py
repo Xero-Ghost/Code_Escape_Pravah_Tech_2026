@@ -629,9 +629,17 @@ def create_app(config=None):
         require(match, 'Match not found', 404)
         require(match.status == 'ready' and match.started_at is None,
                 'Questions can only be changed before the match starts', 409)
-        teams = body().get('team_question_ids')
-        require(isinstance(teams, dict), 'Choose 16 questions separately for each team')
+        payload = body()
+        teams = payload.get('team_question_ids')
         team_ids = [str(match.a), str(match.b)]
+        require(match.a is not None and match.b is not None, 'Wait for both teams to reach this match', 409)
+        if payload.get('auto_assign') is True:
+            first = questions_for_match()
+            second = questions_for_match(excluded_ids=first)
+            rng = secrets.SystemRandom()
+            teams = {team_ids[0]: rng.sample(first, len(first)),
+                     team_ids[1]: rng.sample(second, len(second))}
+        require(isinstance(teams, dict), 'Choose automatic assignment or provide question sets')
         require(all(isinstance(teams.get(team_id), list) and len(teams[team_id]) == ROUND2_QUESTION_COUNT
                     and all(type(qid) is int for qid in teams[team_id])
                     and len(set(teams[team_id])) == ROUND2_QUESTION_COUNT for team_id in team_ids),
@@ -650,7 +658,7 @@ def create_app(config=None):
         match.question_ids = teams[team_ids[0]] + teams[team_ids[1]]
         audit('match_questions_updated', detail=f'Match {id}: 16 distinct questions per team')
         repo.commit()
-        return jsonify(ok=True)
+        return jsonify(ok=True, team_question_ids=match.team_question_ids)
 
     @app.post('/api/admin/matches/<int:id>/start')
     @auth(True)
