@@ -56,13 +56,14 @@ def validate_question(q):
     require(topic_area in ['', 'Current Tech', 'Core CS'], 'topic_area must be Current Tech or Core CS')
     return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source', 'hint']} | {'year_level': year_level, 'difficulty': difficulty, 'topic_area': topic_area}
 
-def expire_team(team, settings, now=None):
+def expire_team(team, settings, now=None, chambers=None):
     now = now or time.time()
     if team.status not in ['registered', 'playing']:
         return
     starts = getattr(team, 'member_started_at', {}) or {}
     timed_out = set(getattr(team, 'timed_out_members', []) or [])
-    chambers = repo.find(Chamber, {'team_id': {'$eq': team.id}})
+    if chambers is None:
+        chambers = repo.find(Chamber, {'team_id': {'$eq': team.id}})
     for member_key, member_start in starts.items():
         member = int(member_key)
         if member in timed_out:

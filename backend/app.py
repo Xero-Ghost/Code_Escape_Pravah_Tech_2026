@@ -175,11 +175,11 @@ def create_app(config=None):
         now = time.time()
         s = settings(True)
         g.session.seen = now
-        for m in repo.find(Match, {'status': {'$eq': 'live'}}):
+        live_filter = {'status': {'$eq': 'live'}}
+        if not g.session.admin:
+            live_filter['$or'] = [{'a': g.session.team_id}, {'b': g.session.team_id}]
+        for m in repo.find(Match, live_filter):
             settle_match(m, s)
-        # Recover bracket progression if a completed match was saved before its
-        # next round could be materialized (for example, during a brief DB error).
-        advance_bracket()
         result = {'admin': g.session.admin, 'settings': settings_json(s), 'server_time': now}
         if g.session.admin:
             advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
@@ -193,9 +193,14 @@ def create_app(config=None):
                 else:
                     repo.add(Question(**validate_question(question)))
             teams = repo.find(Team, {}, sort=[('_id', 1)])
+            playing_ids = [t.id for t in teams if t.status == 'playing']
+            chamber_groups = {}
+            if playing_ids:
+                for chamber in repo.find(Chamber, {'team_id': {'$in': playing_ids}}):
+                    chamber_groups.setdefault(chamber.team_id, []).append(chamber)
             for t in teams:
                 if t.status == 'playing':
-                    expire_team(team_locked(t.id), s, now)
+                    expire_team(t, s, now, chambers=chamber_groups.get(t.id, []))
             result.update(teams=[team_json(t) for t in teams], questions=[question_json(q, True) for q in repo.find(Question, {})], audit=[{'at': a.at, 'team_id': a.team_id, 'action': a.action, 'detail': a.detail} for a in repo.find(Audit, {}, sort=[('_id', -1)], limit=100)], sessions=[{'team_id': x.team_id, 'member': x.member, 'seen': x.seen} for x in repo.find(Session, {'$and': [{'team_id': {'$ne': None}}, {'seen': {'$gt': now - 90}}, {'expires': {'$gt': now}}]})])
         else:
             team = participant()
@@ -204,9 +209,9 @@ def create_app(config=None):
                 starts.setdefault(str(g.session.member), now)
                 team.member_started_at = starts
                 team.status = 'playing'
-            expire_team(team, s, now)
-            result['member_timed_out'] = g.session.member in set(getattr(team, 'timed_out_members', []) or [])
             chambers = repo.find(Chamber, {'team_id': {'$eq': team.id}})
+            expire_team(team, s, now, chambers=chambers)
+            result['member_timed_out'] = g.session.member in set(getattr(team, 'timed_out_members', []) or [])
             member_started = (getattr(team, 'member_started_at', {}) or {}).get(str(g.session.member))
             result['member_deadline'] = member_started + s.total_seconds if member_started else None
             result.update(team=team_json(team), member=g.session.member, chambers=[])
@@ -218,14 +223,15 @@ def create_app(config=None):
                 if c.member == g.session.member and team.status == 'playing' and (c.submitted_at is None):
                     item['question'] = question_json(repo.get(Question, c.question_id))
                 result['chambers'].append(item)
-        all_matches = repo.find(Match, {}, sort=[('round', 1), ('position', 1)])
+        match_filter = {} if g.session.admin else {'$or': [{'a': team.id}, {'b': team.id}]}
+        all_matches = repo.find(Match, match_filter, sort=[('round', 1), ('position', 1)])
         if g.session.admin:
             result['matches'] = [dict(match_json(m), question_ids=m.question_ids, team_question_ids=getattr(m, 'team_question_ids', {}) or {}) for m in all_matches]
-            result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {})}
+            result['team_names'] = {str(t.id): t.name for t in teams}
         else:
             result['matches'] = [match_json(m) for m in all_matches if team.id in [m.a, m.b]]
             visible_ids = {team.id, *(t for m in result['matches'] for t in [m['a'], m['b']] if t)}
-            result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {}) if t.id in visible_ids}
+            result['team_names'] = {str(t.id): t.name for t in repo.find(Team, {'_id': {'$in': list(visible_ids)}})}
         repo.commit()
         return jsonify(result)
 
