@@ -9,7 +9,7 @@ from mongo_store import password_hash as generate_password_hash
 from pymongo.errors import DuplicateKeyError, PyMongoError
 from mongo_store import repo, MongoStore, install_transactions
 from models import Settings, Team, Session, Question, Chamber, Match, Audit, LoginAttempt
-from engine import require, ArenaError, KINDS, ROUND2_QUESTION_COUNT, audit, question_json, validate_question, expire_team, match_json, questions_for_match, make_round, settle_match, advance_bracket
+from engine import require, ArenaError, KINDS, ROUND2_QUESTION_COUNT, audit, question_json, validate_question, expire_team, match_json, questions_for_match, make_round, seeded_pairs, settle_match, advance_bracket
 from importer import parse_workbook, initial_password
 load_dotenv(Path(__file__).with_name('.env'))
 
@@ -563,14 +563,9 @@ def create_app(config=None):
         size = 1
         while size < len(ids):
             size *= 2
-        byes = size - len(ids)
-        pairs = []
-        for i in range(byes):
-            pairs.append((ids[i], None))
-        remaining = ids[byes:]
-        pairs += [(remaining[i], remaining[i + 1]) for i in range(0, len(remaining), 2)]
-        for i, (a, bid) in enumerate(pairs):
-            repo.add(Match(round=1, position=i, label='Final' if size == 2 else 'Semifinal' if size == 4 else 'Knockout', a=a, b=bid, question_ids=questions_for_match(), answers={}, winner=a if bid is None else None, status='complete' if bid is None else 'ready'))
+        for i, (a, bid) in enumerate(seeded_pairs(ids)):
+            winner = (a if a is not None else bid) if a is None or bid is None else None
+            repo.add(Match(round=1, position=i, label='Final' if size == 2 else 'Semifinal' if size == 4 else 'Knockout', a=a, b=bid, question_ids=[], answers={}, winner=winner, status='complete' if winner is not None else 'ready'))
         advance_bracket()
         audit('bracket_reseeded' if existing else 'bracket_created', detail=ids)
         repo.commit()

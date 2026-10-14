@@ -115,31 +115,67 @@ def questions_for_match(excluded_ids=None):
             return selected
     require(False, 'Round 2 bank cannot form a balanced, distinct 16-question set for this team')
 
+def seeded_pairs(team_ids):
+    """Spread top seeds (and their byes) across opposite halves of the draw."""
+    size = 2
+    while size < len(team_ids):
+        size *= 2
+    seeds = [1, 2]
+    while len(seeds) < size:
+        complement = len(seeds) * 2 + 1
+        seeds = [value for seed in seeds for value in (seed, complement - seed)]
+    slots = [team_ids[seed - 1] if seed <= len(team_ids) else None for seed in seeds]
+    return list(zip(slots[::2], slots[1::2]))
+
+
 def make_round(team_ids, round_no, label=None):
     count = len(team_ids)
     for i in range(0, count, 2):
-        a = team_ids[i]
-        b = team_ids[i + 1] if i + 1 < count else None
+        a, b = team_ids[i], team_ids[i + 1] if i + 1 < count else None
         title = label or ('Final' if count == 2 else 'Semifinal' if count == 4 else 'Knockout')
-        repo.add(Match(round=round_no, position=i // 2, label=title, a=a, b=b, question_ids=questions_for_match(), answers={}, winner=a if b is None else None, status='complete' if b is None else 'ready'))
+        repo.add(Match(round=round_no, position=i // 2, label=title, a=a, b=b,
+                       question_ids=[], answers={}, winner=a if b is None else None,
+                       status='complete' if b is None else 'ready'))
     repo.flush()
+
 
 def advance_bracket():
     repo.lock()
     matches = repo.find(Match, {}, sort=[('round', 1), ('position', 1)])
-    ordinary = [m for m in matches if m.label != 'Third place']
-    if not ordinary:
+    current = sorted([m for m in matches if m.round == 1 and m.label != 'Third place'], key=lambda m: m.position)
+    if not current:
         return
-    last = max((m.round for m in ordinary))
-    current = [m for m in ordinary if m.round == last]
-    if any((m.status != 'complete' for m in current)) or len(current) == 1:
-        return
-    winners = [m.winner for m in current]
-    if len(current) == 2:
-        losers = [m.b if m.winner == m.a else m.a for m in current]
-        if all(losers):
-            make_round(losers, last + 1, 'Third place')
-    make_round(winners, last + 1)
+    # Build the entire tree without requiring questions or completed matches.
+    # An unresolved feeder is a waiting slot, never a BYE.
+    while len(current) > 1:
+        next_round = []
+        round_no = current[0].round + 1
+        for i in range(0, len(current), 2):
+            feeders = current[i:i + 2]
+            winners = [m.winner if m.status == 'complete' else None for m in feeders]
+            if len(winners) == 1:
+                winners.append(None)
+            settled = all(m.status == 'complete' for m in feeders)
+            position = i // 2
+            target = next((m for m in matches if m.round == round_no and m.position == position and m.label != 'Third place'), None)
+            label = 'Final' if len(current) == 2 else 'Semifinal' if len(current) == 4 else 'Knockout'
+            if target is None:
+                target = Match(round=round_no, position=position, label=label, question_ids=[], status='waiting')
+                repo.add(target)
+                matches.append(target)
+            if target.started_at is None and target.status in ['waiting', 'ready']:
+                target.a, target.b = winners
+                target.status = 'ready' if all(w is not None for w in winners) else 'waiting'
+                if settled and any(w is not None for w in winners) and None in winners:
+                    target.winner = next(w for w in winners if w is not None)
+                    target.status = 'complete'
+            next_round.append(target)
+        if len(current) == 2 and all(m.status == 'complete' and m.a is not None and m.b is not None for m in current):
+            losers = [m.b if m.winner == m.a else m.a for m in current]
+            if not any(m.round == round_no and m.label == 'Third place' for m in matches):
+                repo.add(Match(round=round_no, position=1, label='Third place', a=losers[0], b=losers[1], question_ids=[], status='ready'))
+        current = next_round
+    repo.flush()
 
 def settle_match(m, settings):
     if m.status != 'live':
