@@ -559,10 +559,19 @@ def create_app(config=None):
         s = settings(True)
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
-        require(s.stage == 'stage2' and m.status == 'ready', 'Open Stage 2 and select a ready match', 409)
+        require(m.status == 'ready' and m.b is not None, 'Choose a ready match with two teams', 409)
+        selected = body().get('members')
+        require(isinstance(selected, dict), 'Choose one representative for each team')
+        for team_id in [m.a, m.b]:
+            member = selected.get(str(team_id))
+            team = repo.get(Team, team_id)
+            require(team and type(member) is int and 0 <= member < len(team.members),
+                    'Choose one valid member for each team')
+        m.participant_members = {str(team_id): selected[str(team_id)] for team_id in [m.a, m.b]}
         m.started_at = time.time()
         m.status = 'live'
-        audit('match_started', detail=id)
+        s.stage = 'stage2'
+        audit('match_started', detail=f'{id}; members={m.participant_members}')
         repo.commit()
         return jsonify(ok=True)
 
@@ -590,6 +599,10 @@ def create_app(config=None):
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
         require(g.session.admin or g.session.team_id in [m.a, m.b], 'This match belongs to other teams', 403)
+        if not g.session.admin and m.status == 'live':
+            selected_member = (getattr(m, 'participant_members', {}) or {}).get(str(g.session.team_id))
+            require(selected_member is None or selected_member == g.session.member,
+                    'This match is assigned to another team member', 403)
         settle_match(m, s)
         result = match_json(m)
         if m.status == 'live' and s.stage == 'stage2':
@@ -607,6 +620,9 @@ def create_app(config=None):
         m = repo.get(Match, id)
         require(m, 'Match not found', 404)
         require(t.id in [m.a, m.b] and t.status == 'qualified', 'Team cannot answer this match', 403)
+        selected_member = (getattr(m, 'participant_members', {}) or {}).get(str(t.id))
+        require(selected_member is not None and selected_member == g.session.member,
+                'Only the team member selected by the organizer can answer this match', 403)
         settle_match(m, s)
         if m.status != 'live':
             repo.commit()
