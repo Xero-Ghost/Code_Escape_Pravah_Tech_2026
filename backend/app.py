@@ -239,13 +239,15 @@ def create_app(config=None):
         q = repo.get(Question, c.question_id)
         c.correct = type(b.get('answer')) is type(q.answer) and b.get('answer') == q.answer
         c.submitted_at = time.time()
-        if not c.correct:
-            team.status = 'eliminated'
-            team.reason = 'An incorrect chamber answer'
         repo.flush()
         all_c = repo.find(Chamber, {'team_id': {'$eq': team.id}})
-        if len(all_c) == 4 and all((x.correct for x in all_c)):
+        wrong_members = {x.member for x in all_c if x.correct is False}
+        if len(wrong_members) >= 2:
+            team.status = 'eliminated'
+            team.reason = 'Two members answered their chambers incorrectly'
+        elif len(all_c) == 4 and all(x.submitted_at is not None for x in all_c):
             team.status = 'qualified'
+            team.reason = 'Stage 1 completed with at least three correct answers'
         audit('answer_submitted', team.id, f'Chamber {c.slot + 1}: {c.correct}')
         repo.commit()
         return jsonify(correct=c.correct, status=team.status)
@@ -556,9 +558,9 @@ def create_app(config=None):
             repo.add(Chamber(team_id=id, slot=slot, member=member, question_id=None,
                              started_at=now, submitted_at=now, correct=True))
         chambers = repo.find(Chamber, {'team_id': {'$eq': id}})
-        if len(chambers) == 4 and all(c.correct is True for c in chambers):
+        if len(chambers) == 4 and all(c.submitted_at is not None for c in chambers) and sum(c.correct is True for c in chambers) >= 3:
             team.status = 'qualified'
-            team.reason = 'All Stage 1 chambers cleared'
+            team.reason = 'Stage 1 completed with at least three correct answers'
         else:
             team.status = 'playing'
         audit('member_admin_pass', id, f"Member {member + 1}, chamber {slot + 1}; no question attempted")
@@ -740,8 +742,8 @@ def create_app(config=None):
                                 started_at=now-row['elapsed'])
                     repo.add(c); chambers.append(c)
                 c.correct, c.submitted_at = correct, now
-            team.status = 'eliminated' if any(c.correct is False for c in chambers) else 'qualified' if len(chambers) == 4 and all(c.correct for c in chambers) else 'playing'
-            team.reason = 'An incorrect chamber answer (admin-applied practice)' if team.status == 'eliminated' else None
+            team.status = 'eliminated' if len({c.member for c in chambers if c.correct is False}) >= 2 else 'qualified' if len(chambers) == 4 and all(c.submitted_at is not None for c in chambers) and sum(c.correct is True for c in chambers) >= 3 else 'playing'
+            team.reason = 'Two members answered incorrectly (admin-applied practice)' if team.status == 'eliminated' else None
         elif b.get('mode') == 'match':
             require(s.stage == 'stage2' and team.status == 'qualified', 'Open Stage 2 for a qualified team', 409)
             match_id = b.get('match_id')
