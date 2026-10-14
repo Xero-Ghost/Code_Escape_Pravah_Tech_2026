@@ -680,7 +680,8 @@ def create_app(config=None):
         teams = payload.get('team_question_ids')
         team_ids = [str(match.a), str(match.b)]
         require(match.a is not None and match.b is not None, 'Wait for both teams to reach this match', 409)
-        if payload.get('auto_assign') is True:
+        auto_assign = payload.get('auto_assign') is True
+        if auto_assign:
             first = questions_for_match()
             second = questions_for_match(excluded_ids=first)
             rng = secrets.SystemRandom()
@@ -696,12 +697,8 @@ def create_app(config=None):
         for team_id in team_ids:
             qs = [repo.get(Question, qid) for qid in teams[team_id]]
             require(all(q and q.title.startswith('Round 2 · ') for q in qs), 'Choose only Round 2 questions', 409)
-            require(sum(q.difficulty == 'Easy' for q in qs) >= 4
-                    and sum(q.topic_area == 'Current Tech' for q in qs) >= 4
-                    and sum(q.difficulty == 'Hard' for q in qs) >= 4
-                    and all(sum(q.kind == kind for q in qs) >= 4 for kind in ['case', 'arrange', 'error']),
-                    'Each team needs at least 4 Easy, Current Tech, Hard, and each non-quiz format')
         match.team_question_ids = {team_id: teams[team_id] for team_id in team_ids}
+        match.manual_question_selection = not auto_assign
         match.question_ids = teams[team_ids[0]] + teams[team_ids[1]]
         audit('match_questions_updated', detail=f'Match {id}: 16 distinct questions per team')
         repo.commit()
@@ -720,26 +717,26 @@ def create_app(config=None):
             and len(assignments[team_id]) == ROUND2_QUESTION_COUNT
             and len(set(assignments[team_id])) == ROUND2_QUESTION_COUNT for team_id in team_keys)
         valid_assignments = valid_assignments and not set(assignments.get(team_keys[0], [])).intersection(assignments.get(team_keys[1], []))
+        manual_selection = bool(getattr(m, 'manual_question_selection', False))
+        if valid_assignments and not manual_selection:
+            valid_assignments = all(
+                (q := repo.get(Question, qid)) is not None
+                and q.title.startswith('Round 2 · ')
+                and q.difficulty in ['Hard', 'Advanced']
+                for team_id in team_keys for qid in assignments[team_id])
         if not valid_assignments:
             first = questions_for_match()
             second = questions_for_match(excluded_ids=first)
             assignments = {team_keys[0]: first, team_keys[1]: second}
+            manual_selection = False
         for team_id in team_keys:
             qs = [repo.get(Question, qid) for qid in assignments[team_id]]
-            valid_mix = (all(q and q.title.startswith('Round 2 · ') for q in qs)
-                and sum(q.difficulty == 'Easy' for q in qs) >= 4
-                and sum(q.topic_area == 'Current Tech' for q in qs) >= 4
-                and sum(q.difficulty == 'Hard' for q in qs) >= 4
-                and all(sum(q.kind == kind for q in qs) >= 4 for kind in ['case', 'arrange', 'error']))
-            if not valid_mix:
-                first = questions_for_match()
-                second = questions_for_match(excluded_ids=first)
-                assignments = {team_keys[0]: first, team_keys[1]: second}
-                break
+            require(all(q and q.title.startswith('Round 2 · ') for q in qs), 'Choose only Round 2 questions', 409)
         # Persist one independent shuffle per team when the match starts.
         assignments = {team_id: secrets.SystemRandom().sample(assignments[team_id], len(assignments[team_id]))
                        for team_id in team_keys}
         m.team_question_ids = assignments
+        m.manual_question_selection = manual_selection
         m.question_ids = assignments[team_keys[0]] + assignments[team_keys[1]]
         selected = body().get('members')
         require(isinstance(selected, dict), 'Choose one representative account for each team')

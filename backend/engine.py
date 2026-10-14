@@ -96,25 +96,16 @@ def match_json(m):
 
 def questions_for_match(excluded_ids=None):
     excluded_ids = set(excluded_ids or [])
-    questions = [q for q in repo.find(Question, {}) if q.title.startswith('Round 2 · ') and q.id not in excluded_ids]
+    # Automatic sets always use the hardest tier. Manual selections are handled
+    # separately and deliberately do not inherit this difficulty restriction.
+    questions = [q for q in repo.find(Question, {})
+                 if q.title.startswith('Round 2 · ')
+                 and q.difficulty in ['Hard', 'Advanced']
+                 and q.id not in excluded_ids]
     ids = [q.id for q in questions]
     require(len(ids) >= ROUND2_QUESTION_COUNT, 'Not enough unused Round 2 questions for a separate team set')
     rng = random.SystemRandom()
-    require(all(sum(q.kind == kind for q in questions) >= 4 for kind in ['case', 'arrange', 'error']),
-            'Round 2 bank needs at least four questions per non-quiz format')
-    for _ in range(2000):
-        selected = []
-        for kind in ['case', 'arrange', 'error']:
-            candidates = [q.id for q in questions if q.kind == kind and q.id not in selected]
-            selected.extend(rng.sample(candidates, 4))
-        remaining_quiz = [q.id for q in questions if q.kind == 'quiz' and q.id not in selected]
-        selected.extend(rng.sample(remaining_quiz, ROUND2_QUESTION_COUNT - len(selected)))
-        chosen = [q for q in questions if q.id in selected]
-        if (sum(q.difficulty == 'Easy' for q in chosen) >= 4
-                and sum(q.difficulty == 'Hard' for q in chosen) >= 4
-                and sum(q.topic_area == 'Current Tech' for q in chosen) >= 4):
-            return selected
-    require(False, 'Round 2 bank cannot form a balanced, distinct 16-question set for this team')
+    return rng.sample(ids, ROUND2_QUESTION_COUNT)
 
 def seeded_pairs(team_ids):
     """Spread top seeds (and their byes) across opposite halves of the draw."""

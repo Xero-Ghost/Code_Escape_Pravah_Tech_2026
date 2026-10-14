@@ -43,7 +43,7 @@ class Chamber(Record):
 class Match(Record):
     collection = 'match'
     pk = 'id'
-    defaults = {'id': None, 'round': None, 'position': None, 'label': 'Knockout', 'a': None, 'b': None, 'question_ids': None, 'team_question_ids': {}, 'answers': {}, 'participant_members': {}, 'member_started_at': {}, 'started_at': None, 'winner': None, 'status': 'ready'}
+    defaults = {'id': None, 'round': None, 'position': None, 'label': 'Knockout', 'a': None, 'b': None, 'question_ids': None, 'team_question_ids': {}, 'manual_question_selection': False, 'answers': {}, 'participant_members': {}, 'member_started_at': {}, 'started_at': None, 'winner': None, 'status': 'ready'}
 
 class Audit(Record):
     collection = 'audit'
