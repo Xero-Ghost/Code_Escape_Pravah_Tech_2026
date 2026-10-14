@@ -415,6 +415,8 @@ def create_app(config=None):
             t.started_at = None
         if action == 'restore':
             require(t.status == 'disqualified', 'Only a disqualified team can be restored', 409)
+            require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'),
+                    'Move the team back from its knockout round before restoring it', 409)
             t.status = 'qualified'
             t.reason = 'Restored by coordinator'
         if action != 'qualify':
@@ -493,6 +495,46 @@ def create_app(config=None):
         audit('bracket_reseeded' if existing else 'bracket_created', detail=ids)
         repo.commit()
         return jsonify(ok=True)
+
+    @app.post('/api/admin/teams/<int:id>/pass-member')
+    @auth(True)
+    def pass_member(id):
+        s = settings(True)
+        require(s.stage == 'stage1', 'Open Stage 1 before recording a member pass', 409)
+        team = team_locked(id)
+        require(team.status in ['registered', 'playing'],
+                'Restore this team before recording a Stage 1 pass', 409)
+        require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'),
+                'A team in the knockout bracket cannot receive a Stage 1 pass', 409)
+        b = body()
+        member, slot = b.get('member'), b.get('slot')
+        require(type(member) is int and 0 <= member < 4 and type(slot) is int and 0 <= slot < 4,
+                'Choose a valid member and chamber')
+        chambers = repo.find(Chamber, {'team_id': {'$eq': id}})
+        existing_member = next((c for c in chambers if c.member == member), None)
+        existing_slot = next((c for c in chambers if c.slot == slot), None)
+        require(not existing_member or existing_member.slot == slot, 'This member already owns a different chamber', 409)
+        require(not existing_slot or existing_slot.member == member, 'This chamber belongs to another member', 409)
+        if existing_member:
+            require(existing_member.submitted_at is None or existing_member.correct is True,
+                    'An incorrect submitted answer cannot be overwritten with an admin pass', 409)
+            existing_member.correct = True
+            existing_member.submitted_at = existing_member.submitted_at or time.time()
+        else:
+            now = time.time()
+            if team.started_at is None:
+                team.started_at = now
+            repo.add(Chamber(team_id=id, slot=slot, member=member, question_id=None,
+                             started_at=now, submitted_at=now, correct=True))
+        chambers = repo.find(Chamber, {'team_id': {'$eq': id}})
+        if len(chambers) == 4 and all(c.correct is True for c in chambers):
+            team.status = 'qualified'
+            team.reason = 'All Stage 1 chambers cleared'
+        else:
+            team.status = 'playing'
+        audit('member_admin_pass', id, f"Member {member + 1}, chamber {slot + 1}; no question attempted")
+        repo.commit()
+        return jsonify(ok=True, status=team.status)
 
     @app.patch('/api/admin/matches/<int:id>/questions')
     @auth(True)
