@@ -180,9 +180,12 @@ def create_app(config=None):
         result = {'admin': g.session.admin, 'settings': settings_json(s), 'server_time': now}
         if g.session.admin:
             advanced = json.loads((Path(__file__).parent / 'round2_questions.json').read_text(encoding='utf-8'))
-            known_titles = {q.title for q in repo.find(Question, {})}
+            known_questions = {q.title: q for q in repo.find(Question, {})}
             for question in advanced:
-                if question['title'] not in known_titles:
+                existing = known_questions.get(question['title'])
+                if existing:
+                    existing.year_level = question['year_level']
+                else:
                     repo.add(Question(**validate_question(question)))
             teams = repo.find(Team, {}, sort=[('_id', 1)])
             for t in teams:

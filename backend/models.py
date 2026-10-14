@@ -33,7 +33,7 @@ class Session(Record):
 class Question(Record):
     collection = 'question'
     pk = 'id'
-    defaults = {'id': None, 'kind': None, 'title': None, 'prompt': None, 'choices': None, 'answer': None, 'explanation': '', 'source': '', 'hint': ''}
+    defaults = {'id': None, 'kind': None, 'title': None, 'prompt': None, 'choices': None, 'answer': None, 'explanation': '', 'source': '', 'hint': '', 'year_level': ''}
 
 class Chamber(Record):
     collection = 'chamber'

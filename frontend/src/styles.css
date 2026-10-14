@@ -144,3 +144,5 @@ nav .count{background:transparent;color:#a98468;border:1px solid #e5d3bc;font-si
 .round2-question .answers>button.selected{border-color:var(--round2-red);background:var(--round2-red-soft);color:#8f1d16}
 .round2-question .answers>button.selected>span:first-child{background:#fbd5d2;color:var(--round2-red)}
 .round2-question>button.primary,.round2-question .submit-confirm button.primary{background:var(--round2-red)}
+.question-labels{display:flex;align-items:center;gap:10px}
+.year-level-badge{display:inline-flex;align-items:center;border:1px solid #edaaa5;background:#fff1f0;color:#a51d17;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:700;letter-spacing:.2px}

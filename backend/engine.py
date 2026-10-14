@@ -25,7 +25,7 @@ def audit(action, team_id=None, detail=''):
 def question_json(q, admin=False):
     fingerprint = hashlib.sha256(json.dumps({k: getattr(q, k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source']}, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
     enrichment = QUESTION_ENRICHMENTS.get(fingerprint, {})
-    result = dict(id=q.id, kind=q.kind, title=q.title, prompt=enrichment.get('prompt', q.prompt), choices=q.choices, hint=getattr(q, 'hint', '') or enrichment.get('hint', ''))
+    result = dict(id=q.id, kind=q.kind, title=q.title, prompt=enrichment.get('prompt', q.prompt), choices=q.choices, hint=getattr(q, 'hint', '') or enrichment.get('hint', ''), year_level=getattr(q, 'year_level', '') or '')
     if admin:
         result.update(answer=q.answer, explanation=q.explanation, source=q.source)
     return result
@@ -47,7 +47,9 @@ def validate_question(q):
         require(isinstance(a, list) and all((type(x) is int for x in a)) and (sorted(a) == list(range(len(c)))), 'Arrangement answer must be a permutation of zero-based line indexes')
     else:
         require(type(a) is int and 0 <= a < len(c), 'Answer must be a zero-based choice index')
-    return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source', 'hint']}
+    year_level = q.get('year_level', '')
+    require(year_level in ['', '1st Year', '2nd Year'], 'year_level must be 1st Year or 2nd Year')
+    return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source', 'hint']} | {'year_level': year_level}
 
 def expire_team(team, settings, now=None):
     now = now or time.time()
