@@ -2,7 +2,7 @@
   {
     "kind": "case",
     "title": "The invisible stylesheet",
-    "prompt": "HTML loads, but the network panel reports 404 for /styles.css. What is the most likely cause?",
+    "prompt": "A student team deploys its event registration website. The page opens and all headings and form fields are visible, but the layout has lost its colours, spacing and fonts. Reloading the page does not help. In the browser developer tools, the HTML request succeeds while the request for /styles.css returns HTTP 404. The stylesheet link is still present in the HTML, and no stylesheet content appears in the response.\n\nHTML loads, but the network panel reports 404 for /styles.css. What is the most likely cause?",
     "choices": [
       "Incorrect stylesheet URL or missing deployed file",
       "A selector with lower CSS specificity",
@@ -11,12 +11,13 @@
     ],
     "answer": 0,
     "explanation": "A 404 response means the requested resource was not found at that URL; inspect the stylesheet path and deployed file.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404",
+    "hint": "Check whether the browser successfully downloaded the stylesheet before investigating CSS rules."
   },
   {
     "kind": "case",
     "title": "A button that does nothing",
-    "prompt": "A script in the document head calls getElementById before the button markup is parsed. It receives null. What caused this?",
+    "prompt": "A team adds a button to reveal the event rules. Their JavaScript runs immediately from a script placed in the document head, above the body. The button is written later in the HTML and has the exact ID used by the script. When the page first loads, getElementById returns null, so the listener cannot be attached. Running the same lookup manually after the page finishes loading successfully finds the button.\n\nA script in the document head calls getElementById before the button markup is parsed. It receives null. What caused this?",
     "choices": [
       "The button has a CSS display rule",
       "The click handler returns false",
@@ -25,12 +26,13 @@
     ],
     "answer": 3,
     "explanation": "The lookup runs before the element has been parsed. Defer the script or wait for the DOM to be ready.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById",
+    "hint": "Compare the time the lookup runs with the time the browser creates the target element."
   },
   {
     "kind": "case",
     "title": "The endless counter",
-    "prompt": "Pseudocode sets i = 1 and repeats WHILE i <= 5, printing i without changing it. Why does it never finish?",
+    "prompt": "A volunteer writes a small pseudocode program to print five numbered instructions. It sets i to 1 and enters a WHILE loop whose condition is i <= 5. Inside the loop, the program prints the current value of i and immediately checks the same condition again. During a trial run, the console keeps printing 1 and the program never reaches the statement after the loop. No input or asynchronous work is involved.\n\nPseudocode sets i = 1 and repeats WHILE i <= 5, printing i without changing it. Why does it never finish?",
     "choices": [
       "PRINT converts the counter into text",
       "The loop compares two integers",
@@ -39,12 +41,13 @@
     ],
     "answer": 2,
     "explanation": "The loop condition remains true because i never changes. Increment the counter inside the loop.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the value used by the loop condition across two iterations."
   },
   {
     "kind": "case",
     "title": "Login query fails",
-    "prompt": "A SQL query uses WHERE username = userInput by directly concatenating raw user input. What should replace this unsafe construction?",
+    "prompt": "A college portal checks a username against a SQL database. The developer builds the query text by concatenating the raw username entered in the login form. Ordinary names appear to work, but names containing a quote can break the query. A reviewer points out that specially constructed input could also change the meaning of the SQL. The team needs a server-side construction that keeps user input separate from executable query syntax.\n\nA SQL query uses WHERE username = userInput by directly concatenating raw user input. What should replace this unsafe construction?",
     "choices": [
       "Checking input only in browser JavaScript",
       "A parameterized query with bound input values",
@@ -53,12 +56,13 @@
     ],
     "answer": 1,
     "explanation": "Binding values through query parameters separates user input from SQL syntax.",
-    "source": "https://docs.python.org/3/library/sqlite3.html"
+    "source": "https://docs.python.org/3/library/sqlite3.html",
+    "hint": "Look for a solution that treats input as data rather than part of SQL syntax."
   },
   {
     "kind": "case",
     "title": "Missing JSON data",
-    "prompt": "A server sends valid JSON, but JavaScript uses response.text() and then accesses result.name. Why is name undefined?",
+    "prompt": "A dashboard requests a participant profile from an API. The network panel shows a successful response containing valid JSON, including a name property. In the client code, the developer awaits response.text() and stores the result in a variable named result. Logging result shows the JSON characters, but reading result.name produces undefined. The API response is complete, and the request has no network or permission error.\n\nA server sends valid JSON, but JavaScript uses response.text() and then accesses result.name. Why is name undefined?",
     "choices": [
       "The response body was read as a string",
       "The server must return XML for property access",
@@ -67,12 +71,13 @@
     ],
     "answer": 0,
     "explanation": "response.text() returns a string. Parse JSON, for example using response.json(), before reading object properties.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch",
+    "hint": "Consider the JavaScript type returned by the response-reading method."
   },
   {
     "kind": "case",
     "title": "One result too many",
-    "prompt": "An array has indexes 0 through 4. A loop reads indexes 0 through 5 inclusive. What caused the invalid access?",
+    "prompt": "A leaderboard stores exactly five entries in an array with indexes 0 through 4. A developer writes a loop starting at index 0 and continuing while the index is less than or equal to 5. The first five reads retrieve valid entries, but the sixth read reaches outside the array. The program then fails when it tries to use a property of that nonexistent entry. The array length does not change during the loop.\n\nAn array has indexes 0 through 4. A loop reads indexes 0 through 5 inclusive. What caused the invalid access?",
     "choices": [
       "The first item is at index one",
       "The array must contain six comments",
@@ -81,12 +86,13 @@
     ],
     "answer": 3,
     "explanation": "An array of five items has valid indexes 0–4. Reading index 5 exceeds the array bounds.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Compare the largest valid index with the last index visited by the loop."
   },
   {
     "kind": "case",
     "title": "Local works, remote fails",
-    "prompt": "A deployed frontend calls http://localhost:5000/api. Why can another student not reach the backend?",
+    "prompt": "A team tests a web application on the laptop that runs its backend. The frontend calls http://localhost:5000/api and receives data correctly. After the frontend is deployed, another student opens it on a different computer and cannot load the data. The deployed JavaScript still contains the same localhost address. The original laptop is running, but the other student has no backend process listening on port 5000 on their own computer.\n\nA deployed frontend calls http://localhost:5000/api. Why can another student not reach the backend?",
     "choices": [
       "Every frontend must use the database port directly",
       "The HTTP method changes automatically after deployment",
@@ -95,12 +101,13 @@
     ],
     "answer": 2,
     "explanation": "localhost refers to the machine making the request, not the developer’s remote server.",
-    "source": "https://developer.mozilla.org/en-US/docs/Glossary/Localhost"
+    "source": "https://developer.mozilla.org/en-US/docs/Glossary/Localhost",
+    "hint": "Think about which computer resolves the hostname in a browser request."
   },
   {
     "kind": "case",
     "title": "A locked-out user",
-    "prompt": "An access token is configured to expire at 16:00 UTC. At 16:01 UTC the server rejects it even though the signature is valid. Which explanation matches these facts?",
+    "prompt": "An event login system issues an access token with a valid signature and an expiry time of 16:00 UTC. A participant makes a request at 16:01 UTC and the server rejects it. The server clock is correct, the token has not been altered, and the same token worked before 16:00. The participant assumes that a valid signature should be enough to keep access open, but the system checks the configured time window as well.\n\nAn access token is configured to expire at 16:00 UTC. At 16:01 UTC the server rejects it even though the signature is valid. Which explanation matches these facts?",
     "choices": [
       "The database has converted the email into a number",
       "The configured access window has expired",
@@ -109,12 +116,13 @@
     ],
     "answer": 1,
     "explanation": "The stated expiration time has passed. Valid credentials can still be rejected outside their configured access window.",
-    "source": "https://www.rfc-editor.org/rfc/rfc7519#section-4.1.4"
+    "source": "https://www.rfc-editor.org/rfc/rfc7519#section-4.1.4",
+    "hint": "A token signature and a token expiry are separate checks."
   },
   {
     "kind": "case",
     "title": "Unexpected total",
-    "prompt": "A program reads the strings \"2\" and \"3\" and joins them into \"23\". What is needed to calculate 5?",
+    "prompt": "A calculator reads two values from text inputs. The user enters 2 and 3, expecting the displayed sum to be 5. Debugging shows that the values stored by the program are the strings \"2\" and \"3\". The operation joins those strings and displays \"23\". Both input fields contain valid numeric text, so the team wants to change how these values are handled before performing addition.\n\nA program reads the strings \"2\" and \"3\" and joins them into \"23\". What is needed to calculate 5?",
     "choices": [
       "Convert both inputs to numeric values before addition",
       "Reverse the two input strings",
@@ -123,12 +131,13 @@
     ],
     "answer": 0,
     "explanation": "Numeric-looking strings must be converted to numbers before numeric addition; otherwise joining them yields text.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Inspect the types of the two operands before applying the operator."
   },
   {
     "kind": "case",
     "title": "Stale screen",
-    "prompt": "The server has a new score, but the page fetched scores only on initial load. What is missing?",
+    "prompt": "An organizer changes a team score on the server. A fresh API request returns the updated score, but a participant who already has the leaderboard open continues to see the old value. The page fetched its data once when it loaded and stored that response in local application state. It has no polling timer, subscription or refresh action. Refreshing the whole browser page immediately displays the updated score.\n\nThe server has a new score, but the page fetched scores only on initial load. What is missing?",
     "choices": [
       "The SQL table must be deleted and recreated",
       "The score must be rendered in an image element",
@@ -137,12 +146,13 @@
     ],
     "answer": 3,
     "explanation": "A one-time fetch is a snapshot. Fetch again, poll, or use a push update when the underlying score changes.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch",
+    "hint": "Ask how new server data would reach the already-open page."
   },
   {
     "kind": "case",
     "title": "Repeated registrations",
-    "prompt": "Two requests create a registration for the same email simultaneously. Which database control reliably prevents duplicates?",
+    "prompt": "Two students submit registration forms for the same email at nearly the same instant. Each server request first checks whether the email exists, and both checks find no existing row. Both requests then insert a new registration, leaving a duplicate. The team needs a database rule that remains effective when requests arrive concurrently, regardless of how many browsers or server processes are involved.\n\nTwo requests create a registration for the same email simultaneously. Which database control reliably prevents duplicates?",
     "choices": [
       "Checking for duplicates only before INSERT in app code",
       "Sorting the spreadsheet by email",
@@ -151,12 +161,13 @@
     ],
     "answer": 2,
     "explanation": "A database unique constraint rejects a conflicting email even when two insert requests race.",
-    "source": "https://dev.mysql.com/doc/refman/8.4/en/create-table.html"
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/create-table.html",
+    "hint": "The protection needs to work even if two checks run before either insert."
   },
   {
     "kind": "case",
     "title": "Unreachable website",
-    "prompt": "A domain lookup returns NXDOMAIN while other sites work. What should you investigate first?",
+    "prompt": "A student enters the event website domain and receives a DNS NXDOMAIN response before any web page loads. Other websites work normally on the same network. The browser never reaches the event server to request HTML or CSS. The organizer recently changed the domain setup and wants to choose the first area to investigate, using the network error rather than changing unrelated application code.\n\nA domain lookup returns NXDOMAIN while other sites work. What should you investigate first?",
     "choices": [
       "The HTML heading hierarchy",
       "DNS/domain spelling and configuration",
@@ -165,12 +176,13 @@
     ],
     "answer": 1,
     "explanation": "NXDOMAIN says the queried domain name does not exist in DNS. Check the domain spelling and DNS setup first.",
-    "source": "https://www.rfc-editor.org/rfc/rfc2308"
+    "source": "https://www.rfc-editor.org/rfc/rfc2308",
+    "hint": "Identify which network step happens before an HTTP request."
   },
   {
     "kind": "case",
     "title": "Form reload",
-    "prompt": "A JavaScript submit handler runs, but the browser performs a normal form submission too. What is missing?",
+    "prompt": "A registration form has a JavaScript submit listener that validates the fields and starts a custom request. The listener runs, but the browser then performs the form’s normal navigation as well, reloading the page and interrupting the intended interaction. There is no second click handler or duplicate listener. The developer needs to stop the default browser action for this submission while keeping the custom handler.\n\nA JavaScript submit handler runs, but the browser performs a normal form submission too. What is missing?",
     "choices": [
       "event.preventDefault() in the submit handler",
       "A return statement in an unrelated function",
@@ -179,12 +191,13 @@
     ],
     "answer": 0,
     "explanation": "Calling preventDefault() in the submit event handler prevents the browser’s default form submission.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault",
+    "hint": "An event listener does not automatically cancel the browser’s built-in action."
   },
   {
     "kind": "case",
     "title": "Counting empty results",
-    "prompt": "A query returns no rows, but code immediately reads rows[0].name. What is the issue?",
+    "prompt": "A server endpoint runs a SQL lookup for a registration. When a record exists, rows[0].name displays the expected name. For an email that has never registered, the database correctly returns an empty result list. The application still tries to read rows[0].name and fails before it can display a helpful message. The database connection and SQL syntax are working correctly.\n\nA query returns no rows, but code immediately reads rows[0].name. What is the issue?",
     "choices": [
       "SQL guarantees one row for every SELECT",
       "The name column is always a numeric type",
@@ -193,12 +206,13 @@
     ],
     "answer": 3,
     "explanation": "The program must handle an empty result before dereferencing its first element.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Consider what the first element of an empty result list would be."
   },
   {
     "kind": "case",
     "title": "A cross-origin request",
-    "prompt": "A browser blocks a frontend request to a different backend origin because the backend does not allow that origin. What should be configured?",
+    "prompt": "A frontend hosted on one origin requests data from a backend on another origin. The backend endpoint works when opened directly, but the browser blocks the frontend JavaScript from reading the response. Developer tools report that the frontend origin is not allowed by the backend’s cross-origin response policy. The team controls the backend and wants to permit this specific frontend to make the request.\n\nA browser blocks a frontend request to a different backend origin because the backend does not allow that origin. What should be configured?",
     "choices": [
       "The order of rows in the database",
       "The page title and favicon",
@@ -207,7 +221,8 @@
     ],
     "answer": 2,
     "explanation": "The backend must return CORS permission for the requesting frontend origin; CSS changes cannot grant it.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS",
+    "hint": "This restriction is enforced by the browser using the server’s response headers."
   },
   {
     "kind": "arrange",
@@ -224,7 +239,8 @@
       1
     ],
     "explanation": "Read both operands, calculate their sum, then print the result. For a=2 and b=3 the output is 5.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -241,7 +257,8 @@
       1
     ],
     "explanation": "Read width and height, multiply them, then print the area. Width 4 and height 3 produce 12.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -260,7 +277,8 @@
       1
     ],
     "explanation": "The conversion is F = C × 9 / 5 + 32, using real-number division. 0°C produces 32°F.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -281,7 +299,8 @@
       2
     ],
     "explanation": "Save the original a in temp before overwriting a, then put temp into b. Inputs 2 and 7 become 7 and 2.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -302,7 +321,8 @@
       2
     ],
     "explanation": "Initialize total once, accumulate integers 1 through 5 inclusive, and print after the loop. The result is 15.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -327,7 +347,8 @@
       4
     ],
     "explanation": "Initialize count, test each value for remainder zero on division by 2, increment inside the IF, then print the count.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -352,7 +373,8 @@
       4
     ],
     "explanation": "For a non-empty list, initialize largest from its first element, compare each value, and update only for a larger value.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -375,7 +397,8 @@
       3
     ],
     "explanation": "Read a non-negative integer n first, initialize result to 1, and multiply by 1 through n inclusive. 0! is 1.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -398,7 +421,8 @@
       3
     ],
     "explanation": "Read the string, initialize an empty result, append characters from the last index down to zero, and print the result.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -417,7 +441,8 @@
       1
     ],
     "explanation": "Read the three values, calculate their total, divide by 3 using real-number division, and print the average.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -444,7 +469,8 @@
       5
     ],
     "explanation": "Read target first, initialize found to FALSE, compare every provided list value, and set found to TRUE on a match.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -463,7 +489,8 @@
       1
     ],
     "explanation": "Read the price, calculate ten percent of that price, subtract the discount, and print the remainder. Price 100 yields 90.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -486,7 +513,8 @@
       3
     ],
     "explanation": "Initialize i to 3. Print and decrement inside the loop, then print Go after the loop. Output: 3, 2, 1, Go.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -505,7 +533,8 @@
       1
     ],
     "explanation": "For i = 1, 2, 3, compute the square before printing it inside the loop. Outputs are 1, 4, 9.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "arrange",
@@ -524,7 +553,8 @@
       1
     ],
     "explanation": "Read minutes, multiply by 60, construct the message from the calculated seconds, and print. 2 minutes gives Seconds: 120.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
   },
   {
     "kind": "error",
@@ -538,7 +568,8 @@
     ],
     "answer": 2,
     "explanation": "The first invalid access occurs at PRINT values[index]: index is 3 but the list has only indexes 0, 1 and 2.",
-    "source": "https://docs.python.org/3/library/exceptions.html"
+    "source": "https://docs.python.org/3/library/exceptions.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -552,7 +583,8 @@
     ],
     "answer": 2,
     "explanation": "The expression a / b divides by zero because b is 0; the invalid operation is the division line.",
-    "source": "https://docs.python.org/3/library/exceptions.html"
+    "source": "https://docs.python.org/3/library/exceptions.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -566,7 +598,8 @@
     ],
     "answer": 2,
     "explanation": "totla is not the defined variable total. The misspelled name is used in the division expression.",
-    "source": "https://docs.python.org/3/library/exceptions.html"
+    "source": "https://docs.python.org/3/library/exceptions.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -580,7 +613,8 @@
     ],
     "answer": 1,
     "explanation": "The Python if header must end with a colon.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -594,7 +628,8 @@
     ],
     "answer": 1,
     "explanation": "Python equality testing uses ==. A bare assignment with = is not valid in this if condition.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -608,7 +643,8 @@
     ],
     "answer": 2,
     "explanation": "const creates a binding that cannot be reassigned. Assigning a new value to score throws a TypeError. It does not imply deep object immutability.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Invalid_const_assignment"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Invalid_const_assignment",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -622,7 +658,8 @@
     ],
     "answer": 2,
     "explanation": "SELECT ... FROM ... WHERE ... is the required clause order. In the third statement WHERE incorrectly precedes FROM.",
-    "source": "https://dev.mysql.com/doc/refman/8.4/en/select.html"
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/select.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -636,7 +673,8 @@
     ],
     "answer": 1,
     "explanation": "range(start, 3) excludes 3. With start=1, it produces 1 and 2; the stop argument should be 4.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -650,7 +688,8 @@
     ],
     "answer": 2,
     "explanation": "Decrementing a counter that starts at 1 cannot make i <= 3 false. Increment it to reach the terminating condition.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -664,7 +703,8 @@
     ],
     "answer": 2,
     "explanation": "JavaScript property names are case-sensitive. The method is getElementById, with lowercase d at the end.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -678,7 +718,8 @@
     ],
     "answer": 2,
     "explanation": "result = greet assigns the function object. result = greet() calls it and stores its returned string.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -692,7 +733,8 @@
     ],
     "answer": 2,
     "explanation": "A two-element Python list has indexes 0 and 1. items[2] raises IndexError.",
-    "source": "https://docs.python.org/3/library/exceptions.html"
+    "source": "https://docs.python.org/3/library/exceptions.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -706,7 +748,8 @@
     ],
     "answer": 2,
     "explanation": "total = x replaces the accumulator. Use total = total + x to retain the previous sum.",
-    "source": "https://docs.python.org/3/tutorial/controlflow.html"
+    "source": "https://docs.python.org/3/tutorial/controlflow.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -720,7 +763,8 @@
     ],
     "answer": 2,
     "explanation": "Python does not concatenate str and int with +. Convert age with str(age) or format it into a string.",
-    "source": "https://docs.python.org/3/library/exceptions.html"
+    "source": "https://docs.python.org/3/library/exceptions.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "error",
@@ -734,7 +778,8 @@
     ],
     "answer": 1,
     "explanation": "Hello without quotes is a name lookup. Since it is undefined, greeting = Hello raises NameError.",
-    "source": "https://docs.python.org/3/library/exceptions.html"
+    "source": "https://docs.python.org/3/library/exceptions.html",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
   },
   {
     "kind": "quiz",
@@ -748,7 +793,8 @@
     ],
     "answer": 0,
     "explanation": "The a element creates a hyperlink when it has an href attribute.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -762,7 +808,8 @@
     ],
     "answer": 1,
     "explanation": "A CSS ID selector uses # followed by the ID value.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/CSS/ID_selectors"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/CSS/ID_selectors",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -776,7 +823,8 @@
     ],
     "answer": 2,
     "explanation": "GET requests a representation of a resource.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -790,7 +838,8 @@
     ],
     "answer": 1,
     "explanation": "JSON object property names and string values use double quotes.",
-    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON"
+    "source": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -804,7 +853,8 @@
     ],
     "answer": 0,
     "explanation": "WHERE filters rows before GROUP BY is evaluated; HAVING filters groups.",
-    "source": "https://dev.mysql.com/doc/refman/8.4/en/select.html"
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/select.html",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -818,7 +868,8 @@
     ],
     "answer": 2,
     "explanation": "17 = 3 × 5 + 2, so the remainder is 2.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -832,7 +883,8 @@
     ],
     "answer": 1,
     "explanation": "Logical AND is true only when both operands are true.",
-    "source": "https://docs.python.org/3/library/stdtypes.html"
+    "source": "https://docs.python.org/3/library/stdtypes.html",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -846,7 +898,8 @@
     ],
     "answer": 2,
     "explanation": "A standard queue removes elements in first-in, first-out order.",
-    "source": "https://docs.python.org/3/tutorial/datastructures.html"
+    "source": "https://docs.python.org/3/tutorial/datastructures.html",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -860,7 +913,8 @@
     ],
     "answer": 1,
     "explanation": "Binary search uses sorted order to discard half the remaining search range on each comparison.",
-    "source": "https://docs.python.org/3/library/bisect.html"
+    "source": "https://docs.python.org/3/library/bisect.html",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -874,7 +928,8 @@
     ],
     "answer": 1,
     "explanation": "A PRIMARY KEY uniquely identifies rows and cannot contain NULL values.",
-    "source": "https://dev.mysql.com/doc/refman/8.4/en/create-table.html"
+    "source": "https://dev.mysql.com/doc/refman/8.4/en/create-table.html",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -888,7 +943,8 @@
     ],
     "answer": 2,
     "explanation": "git commit records a new commit from the staged content by default.",
-    "source": "https://git-scm.com/docs/git-commit"
+    "source": "https://git-scm.com/docs/git-commit",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -902,7 +958,8 @@
     ],
     "answer": 0,
     "explanation": "Google’s official announcement dated 3 March 2026 introduced Gemini 3.1 Flash-Lite in preview.",
-    "source": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-lite/"
+    "source": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-lite/",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -916,7 +973,8 @@
     ],
     "answer": 1,
     "explanation": "Microsoft announced Majorana 1 on 19 February 2025. This question asks who announced it, without treating disputed technical performance claims as settled facts.",
-    "source": "https://news.microsoft.com/source/features/innovation/microsofts-majorana-1-chip-carves-new-path-for-quantum-computing/"
+    "source": "https://news.microsoft.com/source/features/innovation/microsofts-majorana-1-chip-carves-new-path-for-quantum-computing/",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -930,7 +988,8 @@
     ],
     "answer": 0,
     "explanation": "SPHEREx is NASA’s infrared space telescope for mapping the sky and studying cosmic origins.",
-    "source": "https://science.nasa.gov/mission/spherex/"
+    "source": "https://science.nasa.gov/mission/spherex/",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   },
   {
     "kind": "quiz",
@@ -944,6 +1003,7 @@
     ],
     "answer": 1,
     "explanation": "The Python Software Foundation’s release page dates Python 3.14.0 to 7 October 2025.",
-    "source": "https://www.python.org/downloads/release/python-3140/"
+    "source": "https://www.python.org/downloads/release/python-3140/",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
   }
 ]

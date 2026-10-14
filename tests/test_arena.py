@@ -57,6 +57,42 @@ class ArenaTests(unittest.TestCase):
         self.route('update_settings',{'stage':'stage2'},{}, {'settings':lambda *a:settings})()
         self.assertEqual(settings.stage,'stage2')
 
+    def test_restore_returns_to_stage1_without_granting_passes(self):
+        for has_chambers in [False, True]:
+            team=NS(status='disqualified',reason='Violation',started_at=1)
+            pending=NS(submitted_at=None,started_at=1,correct=None)
+            completed=NS(submitted_at=2,started_at=1,correct=True)
+            chambers=[pending,completed] if has_chambers else []
+            repo=NS(one=lambda *a,**k:None,find=lambda *a:chambers,
+                    delete_where=lambda *a:None,commit=lambda:None)
+            self.route('team_action',{'action':'restore'},{},dict(repo=repo,
+                team_locked=lambda _:team,Chamber='chamber',Session='session',
+                time=NS(time=lambda:100))) (1)
+            self.assertEqual(team.status,'playing' if has_chambers else 'registered')
+            self.assertIsNone(team.reason)
+            if has_chambers:
+                self.assertEqual(pending.started_at,100)
+                self.assertIsNone(pending.correct)
+                self.assertEqual(completed.submitted_at,2)
+                self.assertTrue(completed.correct)
+
+    def test_question_hints_and_paragraphs(self):
+        import hashlib
+        tree=ast.parse((ROOT/'backend/engine.py').read_text())
+        fn=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='question_json')
+        env=dict(hashlib=hashlib,json=json,QUESTION_ENRICHMENTS=json.loads((ROOT/'backend/question_enrichments.json').read_text()))
+        exec(compile(ast.Module(body=[fn],type_ignores=[]),'<serializer>','exec'),env)
+        for q in json.loads((ROOT/'backend/questions.json').read_text()):
+            result=env['question_json'](NS(id=1,**q))
+            self.assertTrue(result['hint'])
+            self.assertNotIn('answer',result)
+            if q['kind']=='case':
+                self.assertIn('\n\n',result['prompt'])
+                self.assertGreater(len(result['prompt'].split()),70)
+        custom=NS(id=1,kind='quiz',title='Custom',prompt='Custom prompt',choices=['a','b'],answer=0,explanation='',source='',hint='My hint')
+        self.assertEqual(env['question_json'](custom)['hint'],'My hint')
+        self.assertEqual(env['question_json'](custom)['prompt'],'Custom prompt')
+
     def test_every_question_accepts_its_correct_answer(self):
         import time
         for q in json.loads((ROOT/'backend/questions.json').read_text()):

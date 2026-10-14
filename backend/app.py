@@ -424,8 +424,14 @@ def create_app(config=None):
             require(t.status == 'disqualified', 'Only a disqualified team can be restored', 409)
             require(not repo.one(Match, {'$or': [{'a': {'$eq': id}}, {'b': {'$eq': id}}]}, field='id'),
                     'Move the team back from its knockout round before restoring it', 409)
-            t.status = 'qualified'
-            t.reason = 'Restored by coordinator'
+            chambers = repo.find(Chamber, {'team_id': {'$eq': id}})
+            now = time.time()
+            t.status = 'playing' if chambers else 'registered'
+            t.reason = None
+            t.started_at = now if chambers else None
+            for chamber in chambers:
+                if chamber.submitted_at is None:
+                    chamber.started_at = now
         if action != 'qualify':
             repo.delete_where(Session, {'team_id': {'$eq': id}})
         audit(action, id, b.get('reason', ''))

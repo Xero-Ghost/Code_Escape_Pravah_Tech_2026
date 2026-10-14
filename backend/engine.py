@@ -1,7 +1,13 @@
+import hashlib
+import json
+from pathlib import Path
 import random
 import time
 from mongo_store import repo
 from models import Settings, Team, Chamber, Question, Match, Audit
+# Enrich only unchanged bundled questions, including questions already stored in Mongo.
+QUESTION_ENRICHMENTS = json.loads(Path(__file__).with_name('question_enrichments.json').read_text())
+
 KINDS = ['case', 'arrange', 'error', 'quiz']
 
 def require(condition, message, status=400):
@@ -17,7 +23,9 @@ def audit(action, team_id=None, detail=''):
     repo.add(Audit(at=time.time(), team_id=team_id, action=action, detail=str(detail)[:500]))
 
 def question_json(q, admin=False):
-    result = dict(id=q.id, kind=q.kind, title=q.title, prompt=q.prompt, choices=q.choices)
+    fingerprint = hashlib.sha256(json.dumps({k: getattr(q, k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source']}, sort_keys=True, ensure_ascii=True).encode()).hexdigest()
+    enrichment = QUESTION_ENRICHMENTS.get(fingerprint, {})
+    result = dict(id=q.id, kind=q.kind, title=q.title, prompt=enrichment.get('prompt', q.prompt), choices=q.choices, hint=getattr(q, 'hint', '') or enrichment.get('hint', ''))
     if admin:
         result.update(answer=q.answer, explanation=q.explanation, source=q.source)
     return result
@@ -31,6 +39,7 @@ def validate_question(q):
     require(isinstance(c, list) and 2 <= len(c) <= 20 and all((isinstance(x, str) and 0 < len(x) <= 2000 for x in c)), 'choices must contain 2â€“20 non-empty strings')
     require(len(set(c)) == len(c), 'Choices / pseudocode lines must be unique')
     require(isinstance(q.get('explanation', ''), str) and len(q.get('explanation', '')) <= 10000, 'Explanation must be text (maximum 10,000 characters)')
+    require(isinstance(q.get('hint', ''), str) and len(q.get('hint', '')) <= 2000, 'Hint must be text (maximum 2,000 characters)')
     source = q.get('source', '')
     require(isinstance(source, str) and len(source) <= 1000 and (not source or source.startswith(('https://', 'http://'))), 'Source must be an http or https URL')
     a = q.get('answer')
@@ -38,7 +47,7 @@ def validate_question(q):
         require(isinstance(a, list) and all((type(x) is int for x in a)) and (sorted(a) == list(range(len(c)))), 'Arrangement answer must be a permutation of zero-based line indexes')
     else:
         require(type(a) is int and 0 <= a < len(c), 'Answer must be a zero-based choice index')
-    return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source']}
+    return {k: q.get(k, '') for k in ['kind', 'title', 'prompt', 'choices', 'answer', 'explanation', 'source', 'hint']}
 
 def expire_team(team, settings, now=None):
     now = now or time.time()

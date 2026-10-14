@@ -1,0 +1,242 @@
+{
+  "bd4df05700302c549fb8b64f713d494de8f5585e397c265bc96ed2f59e5724b0": {
+    "prompt": "A student team deploys its event registration website. The page opens and all headings and form fields are visible, but the layout has lost its colours, spacing and fonts. Reloading the page does not help. In the browser developer tools, the HTML request succeeds while the request for /styles.css returns HTTP 404. The stylesheet link is still present in the HTML, and no stylesheet content appears in the response.\n\nHTML loads, but the network panel reports 404 for /styles.css. What is the most likely cause?",
+    "hint": "Check whether the browser successfully downloaded the stylesheet before investigating CSS rules."
+  },
+  "078863541852c7399a730607d5a4215cd7eb02008cc9df31122861905a52ce4d": {
+    "prompt": "A team adds a button to reveal the event rules. Their JavaScript runs immediately from a script placed in the document head, above the body. The button is written later in the HTML and has the exact ID used by the script. When the page first loads, getElementById returns null, so the listener cannot be attached. Running the same lookup manually after the page finishes loading successfully finds the button.\n\nA script in the document head calls getElementById before the button markup is parsed. It receives null. What caused this?",
+    "hint": "Compare the time the lookup runs with the time the browser creates the target element."
+  },
+  "5e4b74ff567c01ef10485f02a4876f6b8c51beb0b4970c6a271e6511ca6e7d7a": {
+    "prompt": "A volunteer writes a small pseudocode program to print five numbered instructions. It sets i to 1 and enters a WHILE loop whose condition is i <= 5. Inside the loop, the program prints the current value of i and immediately checks the same condition again. During a trial run, the console keeps printing 1 and the program never reaches the statement after the loop. No input or asynchronous work is involved.\n\nPseudocode sets i = 1 and repeats WHILE i <= 5, printing i without changing it. Why does it never finish?",
+    "hint": "Trace the value used by the loop condition across two iterations."
+  },
+  "5771f911a9e359559f5c62383ce37c41235b39c1f8e4876f6b1a57ecd9084f8b": {
+    "prompt": "A college portal checks a username against a SQL database. The developer builds the query text by concatenating the raw username entered in the login form. Ordinary names appear to work, but names containing a quote can break the query. A reviewer points out that specially constructed input could also change the meaning of the SQL. The team needs a server-side construction that keeps user input separate from executable query syntax.\n\nA SQL query uses WHERE username = userInput by directly concatenating raw user input. What should replace this unsafe construction?",
+    "hint": "Look for a solution that treats input as data rather than part of SQL syntax."
+  },
+  "69021eec1444b99c909ce80423ee24703ca62e17af3ae05cbe8d220e4097da87": {
+    "prompt": "A dashboard requests a participant profile from an API. The network panel shows a successful response containing valid JSON, including a name property. In the client code, the developer awaits response.text() and stores the result in a variable named result. Logging result shows the JSON characters, but reading result.name produces undefined. The API response is complete, and the request has no network or permission error.\n\nA server sends valid JSON, but JavaScript uses response.text() and then accesses result.name. Why is name undefined?",
+    "hint": "Consider the JavaScript type returned by the response-reading method."
+  },
+  "ddfe072413f3e95951d4bf4c85dd0da6a91844d22c34d600f9c3ae5e827e7919": {
+    "prompt": "A leaderboard stores exactly five entries in an array with indexes 0 through 4. A developer writes a loop starting at index 0 and continuing while the index is less than or equal to 5. The first five reads retrieve valid entries, but the sixth read reaches outside the array. The program then fails when it tries to use a property of that nonexistent entry. The array length does not change during the loop.\n\nAn array has indexes 0 through 4. A loop reads indexes 0 through 5 inclusive. What caused the invalid access?",
+    "hint": "Compare the largest valid index with the last index visited by the loop."
+  },
+  "1fac3dfb76b221e512b514fc17aab47849335e7fdf60362bd9085a96fd6d27c6": {
+    "prompt": "A team tests a web application on the laptop that runs its backend. The frontend calls http://localhost:5000/api and receives data correctly. After the frontend is deployed, another student opens it on a different computer and cannot load the data. The deployed JavaScript still contains the same localhost address. The original laptop is running, but the other student has no backend process listening on port 5000 on their own computer.\n\nA deployed frontend calls http://localhost:5000/api. Why can another student not reach the backend?",
+    "hint": "Think about which computer resolves the hostname in a browser request."
+  },
+  "ac331ea0724df55638310216a637e594f7728c40d83c35b12f40983c7fea5479": {
+    "prompt": "An event login system issues an access token with a valid signature and an expiry time of 16:00 UTC. A participant makes a request at 16:01 UTC and the server rejects it. The server clock is correct, the token has not been altered, and the same token worked before 16:00. The participant assumes that a valid signature should be enough to keep access open, but the system checks the configured time window as well.\n\nAn access token is configured to expire at 16:00 UTC. At 16:01 UTC the server rejects it even though the signature is valid. Which explanation matches these facts?",
+    "hint": "A token signature and a token expiry are separate checks."
+  },
+  "41d3e9f135311ae62f572a371a5a4a89969c634f18f098e706e07dbd6b95a391": {
+    "prompt": "A calculator reads two values from text inputs. The user enters 2 and 3, expecting the displayed sum to be 5. Debugging shows that the values stored by the program are the strings \"2\" and \"3\". The operation joins those strings and displays \"23\". Both input fields contain valid numeric text, so the team wants to change how these values are handled before performing addition.\n\nA program reads the strings \"2\" and \"3\" and joins them into \"23\". What is needed to calculate 5?",
+    "hint": "Inspect the types of the two operands before applying the operator."
+  },
+  "7e97c501ac9eb4efb92446ac7ecc2b4371128d0a01a36c269efeebd51e73d8e4": {
+    "prompt": "An organizer changes a team score on the server. A fresh API request returns the updated score, but a participant who already has the leaderboard open continues to see the old value. The page fetched its data once when it loaded and stored that response in local application state. It has no polling timer, subscription or refresh action. Refreshing the whole browser page immediately displays the updated score.\n\nThe server has a new score, but the page fetched scores only on initial load. What is missing?",
+    "hint": "Ask how new server data would reach the already-open page."
+  },
+  "677a52a1ee3218a02fa3508f41f1056bb1a404c8fbc7d6f477f6d6ec2452b9f6": {
+    "prompt": "Two students submit registration forms for the same email at nearly the same instant. Each server request first checks whether the email exists, and both checks find no existing row. Both requests then insert a new registration, leaving a duplicate. The team needs a database rule that remains effective when requests arrive concurrently, regardless of how many browsers or server processes are involved.\n\nTwo requests create a registration for the same email simultaneously. Which database control reliably prevents duplicates?",
+    "hint": "The protection needs to work even if two checks run before either insert."
+  },
+  "65fd7d24a021c22a749fc592411b345d3f2132e3ef5f92297329cebbc8687db3": {
+    "prompt": "A student enters the event website domain and receives a DNS NXDOMAIN response before any web page loads. Other websites work normally on the same network. The browser never reaches the event server to request HTML or CSS. The organizer recently changed the domain setup and wants to choose the first area to investigate, using the network error rather than changing unrelated application code.\n\nA domain lookup returns NXDOMAIN while other sites work. What should you investigate first?",
+    "hint": "Identify which network step happens before an HTTP request."
+  },
+  "1fe91b9c921fc09a4d9098a0c3214d19cf11dbba8102c81c6a9a659eb1ff6228": {
+    "prompt": "A registration form has a JavaScript submit listener that validates the fields and starts a custom request. The listener runs, but the browser then performs the form\u2019s normal navigation as well, reloading the page and interrupting the intended interaction. There is no second click handler or duplicate listener. The developer needs to stop the default browser action for this submission while keeping the custom handler.\n\nA JavaScript submit handler runs, but the browser performs a normal form submission too. What is missing?",
+    "hint": "An event listener does not automatically cancel the browser\u2019s built-in action."
+  },
+  "7c4f52cf788c60b1faeed178fbbfcc2634cab96ad6dbfe4adee204924de283bc": {
+    "prompt": "A server endpoint runs a SQL lookup for a registration. When a record exists, rows[0].name displays the expected name. For an email that has never registered, the database correctly returns an empty result list. The application still tries to read rows[0].name and fails before it can display a helpful message. The database connection and SQL syntax are working correctly.\n\nA query returns no rows, but code immediately reads rows[0].name. What is the issue?",
+    "hint": "Consider what the first element of an empty result list would be."
+  },
+  "3561b0d0d111f3fa51d4a1a6cbe2003366497333dba8e3a2fb8c3b42ae4832cc": {
+    "prompt": "A frontend hosted on one origin requests data from a backend on another origin. The backend endpoint works when opened directly, but the browser blocks the frontend JavaScript from reading the response. Developer tools report that the frontend origin is not allowed by the backend\u2019s cross-origin response policy. The team controls the backend and wants to permit this specific frontend to make the request.\n\nA browser blocks a frontend request to a different backend origin because the backend does not allow that origin. What should be configured?",
+    "hint": "This restriction is enforced by the browser using the server\u2019s response headers."
+  },
+  "1166a1f0463d7eac489e116f2c275a575fb4560a169acdf460c2b58a5118f139": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "2a1cd6a8d235162ac782a7d766fd2ade23dcda288c4385c1a825a9d2ef3f7dda": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "3ef924e8381a17f9a91ac4270689537095df9dc85c9103238a6a9a4d8869cdbc": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "665815c3e1c121ad83ffd6937f3cf1b314868574fd8950def42ed0056f1d55b4": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "c9ee065a4fbcd990d355d0609d7148f863813400c9c83874fa60887e15129ac6": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "8967f338178e41dc79271d3de975b52a18ef9e450f1ab756e5514a5885841742": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. The list numbers is already supplied; it is non-empty for the largest-value task.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "5e37c594ae9a7a94c6aec8ac958e0352ce1b0549347d19b7124df5a3abb3fc75": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. The list numbers is already supplied; it is non-empty for the largest-value task.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "db3fadb61f16d141987966be8caaa48fd05d6a1968b2d91d14e040d73489f109": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. Input n is a non-negative integer.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "890cdd3fc64482b6b3f6f235419f83ade6c72ddcd0e45264a5512531cc0f7757": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "d9362f355b46552d132c919d970575615da3cda3da958877b90cc9dbdf91221a": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "7a72e139d8896470dbda5cf51dc678c5e770583552fe6f3f4c933ac064b07c22": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division. The list numbers is already supplied; it is non-empty for the largest-value task.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "9704dd02a6d4e1c06abe1882289e789681ed898a55f35d0cb80ba98a302d742a": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "b6b902b22acbc52b150485e5abc210d811c596ad13b74578e476cd7e2e124c73": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "0fae59a422df6cc131f3e2d8d97faf5670fdd8af74bc0dd0ce0ccbd762f7bdc5": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "2d57c62e829d395a7de5a6341bc0d0be20e3c1d59765b8c340e35112c696de86": {
+    "prompt": "Arrange this pseudocode into execution order. Read any inputs first, then initialize working variables, run the calculation or loop, and print the final result. Keep the shown indentation and block boundaries. FOR bounds are inclusive; indexes start at 0; division is real-number division.",
+    "hint": "Start with inputs and initialization. Then follow variable dependencies and keep each loop or conditional body within its block."
+  },
+  "a6ac3d3cba96d56361eaeb828d57122237d68a2460e0f975e6493e1523f4632a": {
+    "prompt": "Pseudocode arrays use zero-based indexing. Which line first attempts an out-of-bounds array access?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "7e0b5c99e42e2aa3d75fd5348a4b4cbdc70117fd8ba8ac294f53bfcd28497f2a": {
+    "prompt": "Which line attempts an invalid arithmetic operation?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "2bda7b7ab5dc707296e53e9c5e53bc71468524edf571c2fd6f3458659112d5cf": {
+    "prompt": "Variables must be defined before use. Select the line with the undefined variable.",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "11515dc7c5d865a7e28cf75214f1ae5e524a35fef2d64db1629389e603f27cf7": {
+    "prompt": "Select the Python line with a syntax error.",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "053c8e08124cd42dc744bd0f5ee62ea61bf3cc0b77105591e345142497573a9d": {
+    "prompt": "Select the Python line that incorrectly uses assignment in a condition.",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "8af6b0087fba30a5791902b91589b0e9c1922d46fbbfe9a40cb62e1d4af8fbc6": {
+    "prompt": "Select the JavaScript statement that attempts to reassign a constant.",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "29054f340145291a36da3b4e919dbebed5128aace784df11becd7946821acd75": {
+    "prompt": "Which SQL statement has the wrong clause order?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "66ccb3c70e841c2decaee4ea5ff68cef63fd0984fc23723975825f941a66e604": {
+    "prompt": "Goal: print 1, 2, 3. Which line has the incorrect boundary?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "42ec1bd7bf4d37852e6c3cd574018f88e79b08d509742bd47e4225b99312e323": {
+    "prompt": "Goal: count from 1 to 3 and stop. Which line updates the counter in the wrong direction?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "c2e2b8ca1dfc3a92c1a6cd4045d11846b28f5488bb7cb79adb6c12e3b0be263a": {
+    "prompt": "Which JavaScript call uses a nonexistent DOM method?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "ce20ada7975700d127b22533eacfdd53753902393ebe167c8c81f438ab6c1244": {
+    "prompt": "Goal: invoke greet and print its result in Python. Which line fails to call the function?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "e6f03646bb688c56d25f722729ce8d5494d20a193935ba8532e4da76f1de6a21": {
+    "prompt": "Which Python statement attempts to access an out-of-range element?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "4086d5ad6c8abbbc747bdff7e17fdd92b3dd2848d4b1a0075971b231e842c52a": {
+    "prompt": "Goal: sum all values. Which line discards the previous total?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "ed2af53f787fc8aa363524ce339c9790c9716db088f827849c0f1b9cc0493b00": {
+    "prompt": "Which Python line causes a TypeError?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "b3107fe9ce851387d112e221de934c3d3eae94d8951b3565fcc729acf3c97f99": {
+    "prompt": "Which Python line uses an undefined name instead of a string literal?",
+    "hint": "Trace the code in order. Check names, types, valid indexes and the stated goal before choosing the faulty line."
+  },
+  "c3455d2607bf4f024b264956480542b029d39a6d27d0aebae96aa1e7091f9aad": {
+    "prompt": "Which HTML element, with an href attribute, creates a hyperlink?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "fb4e0c95e10d7ef6bb09ede2ba14a946accf8ce9f2ba01f264fa574193424ab1": {
+    "prompt": "Which CSS selector targets an element with id arena?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "436e61f855676ecbf807390301819226d1c5e829abc312565b7230e2bf4a4370": {
+    "prompt": "Which HTTP method is normally used to retrieve a resource?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "702ae2e8ad06b973be6331c2870c5bdfda90bbe9fa5c770354646900a6598165": {
+    "prompt": "Which is valid JSON?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "2a3fd19cbb8062051369eb7435dc67dc841f0efb184dc16c9d04162d1b661717": {
+    "prompt": "Which SQL clause filters rows before grouping?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "3889b5ba80b497acdaa70c02febf6cc528f6384b06a5ea6d3e686466545368d4": {
+    "prompt": "What is the value of 17 MOD 5?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "f768959ecdb225f80ec9b6be1c88cccd415cc2939e967c3e814cf5cc76cdabd6": {
+    "prompt": "What is TRUE AND FALSE?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "20424faf80d13108ed774aa06e214983627a151530a5044c0e83572ec402eac4": {
+    "prompt": "A basic queue follows which order?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "b7d3f2b4f48af588542bbc4637e2e044b839372747d3c8966deab65eecd98796": {
+    "prompt": "What must be true of a standard binary search input array?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "44a6ae86d6740d9b9ba152396cb85d9eae6e264e1cb3418af88fc5dae8de47e6": {
+    "prompt": "Which constraint uniquely identifies every row of a table?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "cd38bbb6e7cd203f37bbaed04f3639b9c88841f8b97ee488b994c578d98c890f": {
+    "prompt": "Which Git command records staged changes as a commit?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "faf7c3cf4c4d5e41aaab89e8d35a65cfc6c2e25a3a6f9a36bccad302b1c58a22": {
+    "prompt": "Which company announced Gemini 3.1 Flash-Lite on 3 March 2026?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "caa9c11e00b6a4ebe623e6b48b6acc8f92c05f342a13ccc1bdf08f7d067cbb17": {
+    "prompt": "Which company announced the Majorana 1 quantum chip in February 2025?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "a6d61b7002297650ecd34603582e93a3282b22d2c11f5380a74f17f17b66c40e": {
+    "prompt": "NASA launched SPHEREx in March 2025. What type of scientific instrument is it?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  },
+  "5f26626be14cc1e14fd5519ac9fc685bddcbeaa811292e9237d6cc11ee148675": {
+    "prompt": "Which major Python version had its stable 3.x.0 release on 7 October 2025?",
+    "hint": "Read each option carefully and recall the basic definition or the official announcement described in the question."
+  }
+}
